@@ -136,6 +136,42 @@ def generate_sync_code():
     part2 = ''.join(random.choices(chars, k=4))
     return f"{part1}-{part2}"
 
+
+REMOTE_BACKEND_URL = os.environ.get("REMOTE_BACKEND_URL", "").rstrip("/")
+
+def try_proxy(handler_instance, path, method="GET", body=None):
+    if not REMOTE_BACKEND_URL:
+        return False
+    target_url = f"{REMOTE_BACKEND_URL}{path}"
+    headers = {}
+    for h in ["Content-Type", "Authorization", "User-Agent"]:
+        if h in handler_instance.headers:
+            headers[h] = handler_instance.headers[h]
+    
+    req = urllib.request.Request(target_url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            resp_body = resp.read()
+            handler_instance.send_response(resp.status)
+            for k, v in resp.headers.items():
+                if k.lower() not in ["transfer-encoding", "content-length"]:
+                    handler_instance.send_header(k, v)
+            handler_instance.send_header("Content-Length", str(len(resp_body)))
+            handler_instance.end_headers()
+            handler_instance.wfile.write(resp_body)
+            return True
+    except urllib.error.HTTPError as e:
+        err_body = e.read()
+        handler_instance.send_response(e.code)
+        handler_instance.send_header("Content-Type", e.headers.get("Content-Type", "application/json"))
+        handler_instance.send_header("Content-Length", str(len(err_body)))
+        handler_instance.end_headers()
+        handler_instance.wfile.write(err_body)
+        return True
+    except Exception as e:
+        handler_instance.send_json({"error": f"Proxy error: {str(e)}"}, status=502)
+        return True
+
 class handler(BaseHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -175,6 +211,8 @@ class handler(BaseHTTPRequestHandler):
         path = parsed.path
         if "path" in params:
             path = "/api/" + params["path"][0]
+        if try_proxy(self, self.path, method="GET"):
+            return
 
         # GET /api/lb
         if path == "/api/lb":

@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: tiem-mi-cay-backend
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python server.py"
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: ADMIN_PASSWORD
+        value: admin123
+      - key: POLICE_CATCH_RATE
+        value: 50
+      - key: POLICE_FEE
+        value: 100000
+      - key: DAY_DURATION_SEC
+        value: 210
+    disk:
+      name: tiem-mi-cay-db
+      mountPath: /app/data
+      sizeGB: 1
