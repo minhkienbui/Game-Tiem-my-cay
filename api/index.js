@@ -2,8 +2,10 @@
 const crypto = require("crypto");
 const { neon } = require("@neondatabase/serverless");
 
+const DEFAULT_NEON_URL = "postgresql://neondb_owner:npg_SCxPc8WBwy7Q@ep-small-bird-b3izwjr0-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
+
 function getDbUrl() {
-  return process.env.DATABASE_URL || process.env.POSTGRES_URL || "";
+  return process.env.DATABASE_URL || process.env.POSTGRES_URL || DEFAULT_NEON_URL;
 }
 
 function hashPassword(password) {
