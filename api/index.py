@@ -151,13 +151,10 @@ class handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
         path = parsed.path
-        raw_path = self.headers.get("x-matched-path") or self.headers.get("x-forwarded-url") or self.path
-        if "/api/" in raw_path:
-            idx = raw_path.find("/api/")
-            path = raw_path[idx:].split("?")[0]
-        query_str = parsed.query or (urlparse(raw_path).query if "?" in raw_path else "")
-        params = parse_qs(query_str)
+        if "path" in params:
+            path = "/api/" + params["path"][0]
 
         # GET /api/lb
         if path == "/api/lb":
@@ -269,11 +266,10 @@ class handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
         path = parsed.path
-        raw_path = self.headers.get("x-matched-path") or self.headers.get("x-forwarded-url") or self.path
-        if "/api/" in raw_path:
-            idx = raw_path.find("/api/")
-            path = raw_path[idx:].split("?")[0]
+        if "path" in params:
+            path = "/api/" + params["path"][0]
         body = self.read_json_body()
 
         # POST /api/lb
