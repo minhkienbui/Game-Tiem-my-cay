@@ -23,6 +23,11 @@ import string
 import time
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
+import hashlib
+
+def hash_password(password):
+    return hashlib.sha256(("tiemMiCayAuth$" + password).encode("utf-8")).hexdigest()
+
 
 try:
     if hasattr(sys.stdout, "reconfigure"):
@@ -44,6 +49,21 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
     # Leaderboard table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE COLLATE NOCASE,
+            password_hash TEXT,
+            created_at INTEGER
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS user_saves (
+            username TEXT PRIMARY KEY COLLATE NOCASE,
+            save_data TEXT,
+            updated_at INTEGER
+        )
+    ''')
     cur.execute('''
         CREATE TABLE IF NOT EXISTS leaderboard (
             id TEXT PRIMARY KEY,
@@ -183,6 +203,35 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
+
+        # Dedicated private route for Admin
+        if path in ["/admin", "/admin/"]:
+            admin_file = os.path.join(BASE_DIR, "admin.html")
+            if not os.path.exists(admin_file):
+                admin_file = os.path.join(BASE_DIR, "public", "admin.html")
+            if os.path.exists(admin_file):
+                with open(admin_file, "rb") as f:
+                    content = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
+
+        # GET /api/auth/save
+        if path == "/api/auth/save":
+            params = parse_qs(parsed.query)
+            username = params.get("username", [""])[0].strip().lower()
+            if username:
+                conn = sqlite3.connect(DB_PATH)
+                cur = conn.cursor()
+                cur.execute("SELECT save_data FROM user_saves WHERE username = ?", (username,))
+                row = cur.fetchone()
+                conn.close()
+                if row:
+                    return self.send_json({"ok": True, "save": row[0]})
+            return self.send_json({"ok": False}, status=404)
         params = parse_qs(parsed.query)
 
         # Defense against Path Traversal and Sensitive File Access
@@ -354,6 +403,87 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        body = self.read_json_body()
+
+        # AUTH: POST /api/auth/register
+        if path == "/api/auth/register":
+            username = str(body.get("username", "")).strip().lower()
+            password = str(body.get("password", ""))
+            confirm_password = str(body.get("confirmPassword", ""))
+
+            if not username or len(username) < 3 or len(username) > 30:
+                return self.send_json({"ok": False, "error": "Tên tài khoản phải từ 3 đến 30 ký tự!"}, status=400)
+            if not password or len(password) < 6:
+                return self.send_json({"ok": False, "error": "Mật khẩu tối thiểu phải từ 6 ký tự!"}, status=400)
+            if password != confirm_password:
+                return self.send_json({"ok": False, "error": "Mật khẩu nhập lại không khớp!"}, status=400)
+
+            pwd_hash = hash_password(password)
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM users WHERE username = ?", (username,))
+            if cur.fetchone():
+                conn.close()
+                return self.send_json({"ok": False, "error": "Tên tài khoản này đã được sử dụng!"}, status=400)
+
+            cur.execute("INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+                        (username, pwd_hash, int(time.time())))
+            conn.commit()
+            conn.close()
+
+            return self.send_json({"ok": True, "username": username, "message": "Đăng ký tài khoản thành công!"})
+
+        # AUTH: POST /api/auth/login
+        if path == "/api/auth/login":
+            username = str(body.get("username", "")).strip().lower()
+            password = str(body.get("password", ""))
+
+            if not username or not password:
+                return self.send_json({"ok": False, "error": "Vui lòng nhập đầy đủ tài khoản và mật khẩu!"}, status=400)
+
+            pwd_hash = hash_password(password)
+
+            conn = sqlite3.connect(DB_PATH)
+            cur = conn.cursor()
+            cur.execute("SELECT password_hash FROM users WHERE username = ?", (username,))
+            row = cur.fetchone()
+
+            if not row or row[0] != pwd_hash:
+                conn.close()
+                return self.send_json({"ok": False, "error": "Sai tài khoản hoặc mật khẩu!"}, status=400)
+
+            # Check if user has an existing saved game
+            cur.execute("SELECT save_data FROM user_saves WHERE username = ?", (username,))
+            save_row = cur.fetchone()
+            conn.close()
+
+            return self.send_json({
+                "ok": True,
+                "username": username,
+                "save": save_row[0] if save_row else None,
+                "message": "Đăng nhập thành công!"
+            })
+
+        # AUTH: POST /api/auth/save
+        if path == "/api/auth/save":
+            username = str(body.get("username", "")).strip().lower()
+            save_data = str(body.get("save", ""))
+
+            if username and save_data:
+                conn = sqlite3.connect(DB_PATH)
+                cur = conn.cursor()
+                cur.execute('''
+                    INSERT INTO user_saves (username, save_data, updated_at)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(username) DO UPDATE SET
+                        save_data = excluded.save_data,
+                        updated_at = excluded.updated_at
+                ''', (username, save_data, int(time.time())))
+                conn.commit()
+                conn.close()
+                return self.send_json({"ok": True})
+            return self.send_json({"ok": False}, status=400)
         body = self.read_json_body()
 
         # 1. POST /api/lb (Submit score to Leaderboard)

@@ -10,6 +10,11 @@ import time
 import shutil
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
+import hashlib
+
+def hash_password(password):
+    return hashlib.sha256(("tiemMiCayAuth$" + password).encode("utf-8")).hexdigest()
+
 
 IS_VERCEL = bool(os.environ.get("VERCEL") or os.environ.get("NOW_REGION"))
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,6 +39,21 @@ if IS_VERCEL and os.path.exists(ORIG_DB) and not os.path.exists(DB_PATH):
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cur = conn.cursor()
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE COLLATE NOCASE,
+            password_hash TEXT,
+            created_at INTEGER
+        )
+    ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS user_saves (
+            username TEXT PRIMARY KEY COLLATE NOCASE,
+            save_data TEXT,
+            updated_at INTEGER
+        )
+    ''')
     cur.execute('''
         CREATE TABLE IF NOT EXISTS leaderboard (
             id TEXT PRIMARY KEY,
