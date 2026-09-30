@@ -1,7 +1,5 @@
 # Tiệm Mì Cay 7 Cấp Độ (Full-Stack Web Game Tycoon)
 
-Dự án Web Game mô phỏng quản lý quán ăn và nấu mì cay 7 cấp độ được xây dựng và nâng cấp toàn diện dựa trên kiến trúc của [aenhatrang.com](https://aenhatrang.com/) và tài liệu đặc tả kỹ thuật `Tiem_Mi_Cay_AI_Master_Prompt_Specification.docx`.
-
 Hệ thống bao gồm đầy đủ **Frontend Game**, **Trang Quản Trị Admin Panel** và **Backend Server (Python + SQLite)** phục vụ dữ liệu trực tiếp trong thời gian thực.
 
 ---
