@@ -54,7 +54,15 @@ module.exports = async (req, res) => {
   // Parse body if needed
   let body = req.body || {};
   if (typeof body === "string") {
-    try { body = JSON.parse(body); } catch (e) { body = {}; }
+    try {
+    // Enforce Admin Code 09659 on all /api/admin/* endpoints
+    if (path.startsWith("/api/admin")) {
+      const code = req.headers["x-admin-code"] || urlObj.searchParams.get("admin_code");
+      if (code !== "09659") {
+        return res.status(401).json({ error: "Yêu cầu mã code quản trị 09659!" });
+      }
+    }
+ body = JSON.parse(body); } catch (e) { body = {}; }
   }
 
   try {

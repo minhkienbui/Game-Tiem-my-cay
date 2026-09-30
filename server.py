@@ -422,6 +422,10 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             })
 
         # 5. GET /api/admin/overview
+        if path.startswith("/api/admin"):
+            adm_code = self.headers.get("X-Admin-Code") or params.get("admin_code", [""])[0]
+            if adm_code != "09659":
+                return self.send_json({"error": "Yêu cầu mã code quản trị 09659!"}, status=401)
         if path == "/api/admin/overview":
             conn = DB()
             cur = conn
@@ -840,6 +844,10 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"ok": True})
             return self.send_json({"error": "Missing save code"}, status=400)
         # POST /api/admin/user/delete
+        if path.startswith("/api/admin"):
+            adm_code = self.headers.get("X-Admin-Code") or body.get("admin_code", "")
+            if adm_code != "09659":
+                return self.send_json({"error": "Yêu cầu mã code quản trị 09659!"}, status=401)
         if path == "/api/admin/user/delete":
             username = str(body.get("username", "")).strip().lower()
             if username:
