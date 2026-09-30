@@ -17,3 +17,7 @@ state_clean.json
 Thumbs.db
 
 .vercel
+.neon
+.env.local
+node_modules/
+.neon

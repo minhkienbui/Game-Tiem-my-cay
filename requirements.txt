@@ -1,2 +1,2 @@
 # Tiệm Mì Cay Python dependencies
-# Zero external dependencies (uses standard library: sqlite3, json, http.server)
+pg8000>=1.31.0

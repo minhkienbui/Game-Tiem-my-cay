@@ -45,98 +45,154 @@ DB_PATH = os.path.join(DATA_DIR, "tiemmicay.db")
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # ----------------- DATABASE INITIALIZATION -----------------
+# ----------------- DATABASE ADAPTER (NEON POSTGRESQL / SQLITE) -----------------
+POSTGRES_URL = os.environ.get("POSTGRES_URL") or os.environ.get("DATABASE_URL")
+if POSTGRES_URL and POSTGRES_URL.startswith("postgres://"):
+    POSTGRES_URL = POSTGRES_URL.replace("postgres://", "postgresql://", 1)
+
+import ssl
+try:
+    import pg8000.dbapi
+except ImportError:
+    pass
+
+class DB:
+    def __init__(self):
+        self.is_pg = bool(POSTGRES_URL)
+        if self.is_pg:
+            url = urlparse(POSTGRES_URL)
+            ssl_ctx = ssl.create_default_context()
+            self.conn = pg8000.dbapi.connect(
+                user=url.username,
+                password=url.password,
+                host=url.hostname,
+                port=url.port or 5432,
+                database=url.path.lstrip("/"),
+                ssl_context=ssl_ctx
+            )
+        else:
+            self.conn = sqlite3.connect(DB_PATH)
+        self.cur = self.conn.cursor()
+
+    def execute(self, sql, params=()):
+        if self.is_pg:
+            sql = sql.replace("?", "%s")
+        return self.cur.execute(sql, params)
+
+    def executemany(self, sql, seq_of_params):
+        if self.is_pg:
+            sql = sql.replace("?", "%s")
+        return self.cur.executemany(sql, seq_of_params)
+
+    def fetchone(self):
+        return self.cur.fetchone()
+
+    def fetchall(self):
+        return self.cur.fetchall()
+
+    def commit(self):
+        return self.conn.commit()
+
+    def close(self):
+        try:
+            self.cur.close()
+            self.conn.close()
+        except Exception:
+            pass
+
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    # Leaderboard table
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE COLLATE NOCASE,
-            password_hash TEXT,
-            created_at INTEGER
-        )
-    ''')
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS user_saves (
-            username TEXT PRIMARY KEY COLLATE NOCASE,
-            save_data TEXT,
-            updated_at INTEGER
-        )
-    ''')
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS leaderboard (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            profit INTEGER,
-            day INTEGER,
-            served INTEGER,
-            lv INTEGER,
-            rate REAL,
-            updated_at INTEGER
-        )
-    ''')
-    # Challenge results table
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS challenges (
-            id TEXT,
-            day TEXT,
-            score INTEGER,
-            served INTEGER,
-            perfect INTEGER,
-            wrong INTEGER,
-            lost INTEGER,
-            created_at INTEGER
-        )
-    ''')
-    # Challenge session tokens
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS challenge_tokens (
-            token TEXT PRIMARY KEY,
-            id TEXT,
-            day TEXT,
-            n INTEGER,
-            created_at INTEGER
-        )
-    ''')
-    # Cloud sync transfer codes (24h expiry)
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS cloud_saves (
-            code TEXT PRIMARY KEY,
-            save_data TEXT,
-            created_at INTEGER
-        )
-    ''')
-    # Pranks / Gifts between shops
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS pranks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            from_id TEXT,
-            from_name TEXT,
-            to_id TEXT,
-            kind TEXT,
-            taken INTEGER DEFAULT 0,
-            created_at INTEGER
-        )
-    ''')
+    try:
+        db = DB()
+        auto_id_type = "SERIAL" if db.is_pg else "INTEGER"
+        auto_inc = "" if db.is_pg else "AUTOINCREMENT"
 
-    # Seed initial competitor shops if empty
-    cur.execute('SELECT COUNT(*) FROM leaderboard')
-    if cur.fetchone()[0] == 0:
-        seed_shops = [
-            ("sasin_01", "Mì Cay Sasin Phố", 14500000, 18, 220, 9, 4.9, int(time.time())),
-            ("seoul_02", "Tiệm Mì Cay Seoul", 9800000, 14, 160, 8, 4.8, int(time.time())),
-            ("nha_cao", "Mì Cay Nhà Cáo", 6200000, 10, 115, 6, 4.9, int(time.time())),
-            ("be_ot_04", "Tiệm Mì Bé Ớt", 3800000, 7, 85, 5, 4.7, int(time.time())),
-            ("co_ba_05", "Quán Mì Cô Ba", 1950000, 4, 45, 3, 4.6, int(time.time()))
-        ]
-        cur.executemany('''
-            INSERT INTO leaderboard (id, name, profit, day, served, lv, rate, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', seed_shops)
+        db.execute(f"""
+            CREATE TABLE IF NOT EXISTS users (
+                id {auto_id_type} PRIMARY KEY {auto_inc},
+                username TEXT UNIQUE,
+                password_hash TEXT,
+                created_at BIGINT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS user_saves (
+                username TEXT PRIMARY KEY,
+                save_data TEXT,
+                updated_at BIGINT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS leaderboard (
+                id TEXT PRIMARY KEY,
+                name TEXT,
+                profit BIGINT,
+                day INT,
+                served INT,
+                lv INT,
+                rate REAL,
+                updated_at BIGINT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS challenges (
+                id TEXT,
+                day TEXT,
+                score INT,
+                served INT,
+                perfect INT,
+                wrong INT,
+                lost INT,
+                created_at BIGINT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS challenge_tokens (
+                token TEXT PRIMARY KEY,
+                id TEXT,
+                day TEXT,
+                n INT,
+                created_at BIGINT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS cloud_saves (
+                code TEXT PRIMARY KEY,
+                save_data TEXT,
+                created_at BIGINT
+            )
+        """)
+        db.execute(f"""
+            CREATE TABLE IF NOT EXISTS pranks (
+                id {auto_id_type} PRIMARY KEY {auto_inc},
+                from_id TEXT,
+                from_name TEXT,
+                to_id TEXT,
+                kind TEXT,
+                taken INT DEFAULT 0,
+                created_at BIGINT
+            )
+        """)
 
-    conn.commit()
-    conn.close()
+        db.execute("SELECT COUNT(*) FROM leaderboard")
+        row = db.fetchone()
+        if row and row[0] == 0:
+            seed_shops = [
+                ("vua_mi_cay_vip", "Vua Mì Cay Hoàng Gia", 18500000, 25, 485, 10, 5.0, int(time.time())),
+                ("sasin_01", "Mì Cay Sasin Phố", 14500000, 18, 220, 9, 4.9, int(time.time())),
+                ("seoul_02", "Tiệm Mì Cay Seoul", 9800000, 14, 160, 8, 4.8, int(time.time())),
+                ("nha_cao", "Mì Cay Nhà Cáo", 6200000, 10, 115, 6, 4.9, int(time.time())),
+                ("be_ot_04", "Tiệm Mì Bé Ớt", 3800000, 7, 85, 5, 4.7, int(time.time())),
+                ("co_ba_05", "Quán Mì Cô Ba", 1950000, 4, 45, 3, 4.6, int(time.time()))
+            ]
+            db.executemany("""
+                INSERT INTO leaderboard (id, name, profit, day, served, lv, rate, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, seed_shops)
+
+        db.commit()
+        db.close()
+    except Exception as e:
+        print("init_db status:", e)
 
 init_db()
 
@@ -244,8 +300,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
         # 1. GET /api/lb (Leaderboard)
         if path == "/api/lb":
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
             cur.execute('''
                 SELECT id, name, profit, day, served, lv, rate
                 FROM leaderboard
@@ -275,8 +331,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/api/chal":
             shop_id = params.get("id", [""])[0]
             chal_day = get_today_chal_date()
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
 
             # Top scores for today's challenge
             cur.execute('''
@@ -332,8 +388,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         # 3. GET /api/sync (Download save from cloud)
         if path == "/api/sync":
             code = params.get("code", [""])[0].strip().upper()
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
             cur.execute('SELECT save_data, created_at FROM cloud_saves WHERE code = ?', (code,))
             row = cur.fetchone()
             conn.close()
@@ -347,8 +403,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         # 4. GET /api/prank (Social pranks and gifts)
         if path == "/api/prank":
             shop_id = params.get("id", [""])[0]
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
             cur.execute('''
                 SELECT id, name, day, lv FROM leaderboard
                 WHERE id != ?
@@ -367,8 +423,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
         # 5. GET /api/admin/overview
         if path == "/api/admin/overview":
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
             cur.execute('SELECT code, save_data, created_at FROM cloud_saves ORDER BY created_at DESC LIMIT 30')
             saves = [{"code": r[0], "size": len(r[1]), "created_at": r[2]} for r in cur.fetchall()]
             cur.execute('SELECT COUNT(*) FROM cloud_saves')
@@ -420,8 +476,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
             pwd_hash = hash_password(password)
 
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
             cur.execute("SELECT id FROM users WHERE username = ?", (username,))
             if cur.fetchone():
                 conn.close()
@@ -444,8 +500,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
             pwd_hash = hash_password(password)
 
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
             cur.execute("SELECT password_hash FROM users WHERE username = ?", (username,))
             row = cur.fetchone()
 
@@ -543,8 +599,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/api/chal":
             op = body.get("op")
             chal_day = get_today_chal_date()
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
 
             # Start challenge round
             if op == "start":
@@ -617,8 +673,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         # 4. POST /api/prank
         if path == "/api/prank":
             op = body.get("op")
-            conn = sqlite3.connect(DB_PATH)
-            cur = conn.cursor()
+            conn = DB()
+            cur = conn
 
             if op == "send":
                 from_id = body.get("from")
