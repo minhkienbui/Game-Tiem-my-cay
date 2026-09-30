@@ -1,0 +1,2 @@
+# Tiệm Mì Cay Python dependencies
+# Zero external dependencies (uses standard library: sqlite3, json, http.server)
