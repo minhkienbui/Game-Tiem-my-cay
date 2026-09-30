@@ -1,0 +1,17 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary & scratch files
+docx_extracted.txt
+aenhatrang_index.html
+aenhatrang_engine.js
+patch_*.py
+lv10_save.txt
+state_clean.json
+
+# Environment & IDE
+.env
+.DS_Store
+Thumbs.db
