@@ -493,7 +493,10 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
         path = parsed.path
+        if "path" in params:
+            path = "/api/" + params["path"][0]
         body = self.read_json_body()
 
         # AUTH: POST /api/auth/register
