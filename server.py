@@ -452,6 +452,41 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 "saves": saves,
                 "pranks": pranks
             })
+        # 6. GET /api/admin/users
+        if path == "/api/admin/users":
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                SELECT u.id, u.username, u.created_at, u.last_login_at, u.login_count,
+                       u.device_info, u.current_lv, u.current_day, u.current_money,
+                       (s.save_data IS NOT NULL) as has_save
+                FROM users u
+                LEFT JOIN user_saves s ON LOWER(u.username) = LOWER(s.username)
+                ORDER BY u.last_login_at DESC, u.created_at DESC
+                LIMIT 100
+            """)
+            rows = cur.fetchall()
+            cur.execute("SELECT COUNT(*) FROM users")
+            count_row = cur.fetchone()
+            total_users = count_row[0] if count_row else len(rows)
+            conn.close()
+
+            users = []
+            for r in rows:
+                users.append({
+                    "id": r[0],
+                    "username": r[1],
+                    "created_at": r[2],
+                    "last_login_at": r[3],
+                    "login_count": r[4] or 1,
+                    "device_info": r[5] or "Desktop",
+                    "lv": r[6] or 1,
+                    "day": r[7] or 1,
+                    "money": r[8] or 400000,
+                    "has_save": bool(r[9])
+                })
+            return self.send_json({"ok": True, "users": users, "total": total_users})
+
 
         # Default static file serving
         return super().do_GET()
@@ -483,8 +518,15 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 conn.close()
                 return self.send_json({"ok": False, "error": "Tên tài khoản này đã được sử dụng!"}, status=400)
 
-            cur.execute("INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
-                        (username, pwd_hash, int(time.time())))
+            now_t = int(time.time())
+            ua = self.headers.get("User-Agent", "")
+            dev = "Mobile" if any(w in ua.lower() for w in ["iphone", "android", "mobile"]) else "Desktop"
+            dev_str = f"{dev} ({ua[:50]})" if ua else dev
+
+            cur.execute("""
+                INSERT INTO users (username, password_hash, created_at, last_login_at, login_count, device_info, current_lv, current_day, current_money)
+                VALUES (?, ?, ?, ?, 1, ?, 1, 1, 400000)
+            """, (username, pwd_hash, now_t, now_t, dev_str))
             conn.commit()
             conn.close()
 
@@ -509,6 +551,17 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 conn.close()
                 return self.send_json({"ok": False, "error": "Sai tài khoản hoặc mật khẩu!"}, status=400)
 
+            now_t = int(time.time())
+            ua = self.headers.get("User-Agent", "")
+            dev = "Mobile" if any(w in ua.lower() for w in ["iphone", "android", "mobile"]) else "Desktop"
+            dev_str = f"{dev} ({ua[:50]})" if ua else dev
+
+            cur.execute("""
+                UPDATE users SET last_login_at = ?, login_count = COALESCE(login_count, 0) + 1, device_info = ?
+                WHERE username = ?
+            """, (now_t, dev_str, username))
+            conn.commit()
+
             # Check if user has an existing saved game
             cur.execute("SELECT save_data FROM user_saves WHERE username = ?", (username,))
             save_row = cur.fetchone()
@@ -529,13 +582,24 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             if username and save_data:
                 conn = sqlite3.connect(DB_PATH)
                 cur = conn.cursor()
+                now_t = int(time.time())
+                day_val = max(1, int(body.get("day", 1)))
+                money_val = int(body.get("money", 400000))
+                lv_val = max(1, min(10, int(body.get("lv", 1))))
+
                 cur.execute('''
                     INSERT INTO user_saves (username, save_data, updated_at)
                     VALUES (?, ?, ?)
                     ON CONFLICT(username) DO UPDATE SET
                         save_data = excluded.save_data,
                         updated_at = excluded.updated_at
-                ''', (username, save_data, int(time.time())))
+                ''', (username, save_data, now_t))
+
+                cur.execute("""
+                    UPDATE users SET current_day = ?, current_money = ?, current_lv = ?, last_login_at = ?
+                    WHERE username = ?
+                """, (day_val, money_val, lv_val, now_t, username))
+
                 conn.commit()
                 conn.close()
                 return self.send_json({"ok": True})
@@ -772,6 +836,33 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 conn.close()
                 return self.send_json({"ok": True})
             return self.send_json({"error": "Missing save code"}, status=400)
+        # POST /api/admin/user/delete
+        if path == "/api/admin/user/delete":
+            username = str(body.get("username", "")).strip().lower()
+            if username:
+                conn = DB()
+                cur = conn
+                cur.execute("DELETE FROM users WHERE username = ?", (username,))
+                cur.execute("DELETE FROM user_saves WHERE username = ?", (username,))
+                conn.commit()
+                conn.close()
+                return self.send_json({"ok": True})
+            return self.send_json({"error": "Missing username"}, status=400)
+
+        # POST /api/admin/user/reset-password
+        if path == "/api/admin/user/reset-password":
+            username = str(body.get("username", "")).strip().lower()
+            new_pwd = str(body.get("newPassword", "")).strip()
+            if username and len(new_pwd) >= 6:
+                pwd_hash = hash_password(new_pwd)
+                conn = DB()
+                cur = conn
+                cur.execute("UPDATE users SET password_hash = ? WHERE username = ?", (pwd_hash, username))
+                conn.commit()
+                conn.close()
+                return self.send_json({"ok": True})
+            return self.send_json({"error": "Mật khẩu tối thiểu 6 ký tự!"}, status=400)
+
 
         return self.send_json({"error": "Endpoint not found"}, status=404)
 
