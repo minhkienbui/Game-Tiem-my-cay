@@ -806,6 +806,64 @@
         const chalDay = dataChal.day || dataChal.j?.day || "Hôm nay";
         document.getElementById("metricChallenges").textContent = chalList.length;
 
+        // Render Admin Hall of Fame
+        const hofBody = document.getElementById("adminHofBody");
+        const hofList = dataChal.hall_of_fame || [];
+        if (hofBody) {
+          hofBody.innerHTML = hofList.length ? hofList.map(h => {
+            const isTop1 = h.rank === 1;
+            const isTop2 = h.rank === 2;
+            const badgeIcon = isTop1 ? '🥇 TOP 1' : isTop2 ? '🥈 TOP 2' : '🥉 TOP 3';
+            const badgeCls = isTop1 ? 'background:#FEF3C7;color:#B45309;' : isTop2 ? 'background:#F1F5F9;color:#475569;' : 'background:#FFEDD5;color:#9A3412;';
+            const prizeMoney = h.reward_money ? formatMoney(h.reward_money) : (isTop1 ? '1.000.000đ' : isTop2 ? '300.000đ' : '100.000đ');
+
+            return `
+              <tr>
+                <td><b>${escapeHtml(h.week_title || h.week_key)}</b></td>
+                <td><span style="${badgeCls}padding:3px 8px;border-radius:6px;font-weight:800;font-size:11px;">${badgeIcon}</span></td>
+                <td><b style="color:var(--primary);font-size:13.5px;">${escapeHtml(h.shop_name)}</b></td>
+                <td><code>${escapeHtml(h.shop_id)}</code></td>
+                <td><b style="color:#C62828;">${(h.total_score || 0).toLocaleString("vi-VN")} điểm</b></td>
+                <td style="font-weight:800;color:#2E7D32;">${prizeMoney}</td>
+                <td><small style="color:#78350F;font-weight:600;">${escapeHtml(h.custom_title || "")}</small></td>
+                <td>
+                  ${h.claimed ? '<span style="color:#2E7D32;font-weight:700;">✓ Đã nhận</span>' : '<span style="color:#E65100;font-weight:700;">⏳ Chờ người chơi nhận</span>'}
+                </td>
+              </tr>
+            `;
+          }).join("") : '<tr><td colspan="8" style="text-align:center;">Chưa có dữ liệu vinh danh.</td></tr>';
+        }
+
+        // Render Admin Weekly Rankings
+        const weeklyBody = document.getElementById("adminWeeklyBody");
+        const wtopList = dataChal.wtop || [];
+        const wtotalEl = document.getElementById("metricWeeklyTotal");
+        if (wtotalEl) wtotalEl.textContent = `${dataChal.wtotal || wtopList.length} Quán Đang Tranh Tài`;
+
+        if (weeklyBody) {
+          weeklyBody.innerHTML = wtopList.length ? wtopList.map((w, idx) => {
+            const isTop1 = idx === 0;
+            const isTop2 = idx === 1;
+            const isTop3 = idx === 2;
+            const rankBadge = isTop1 ? '🥇 Top 1' : isTop2 ? '🥈 Top 2' : isTop3 ? '🥉 Top 3' : `#${idx + 1}`;
+            const prizeBadge = isTop1 ? '<span style="background:#FEF3C7;color:#B45309;padding:2px 8px;border-radius:4px;font-weight:800;">1.000.000đ + Vinh Danh</span>'
+              : isTop2 ? '<span style="background:#F1F5F9;color:#475569;padding:2px 8px;border-radius:4px;font-weight:800;">300.000đ + Vinh Danh</span>'
+              : isTop3 ? '<span style="background:#FFEDD5;color:#9A3412;padding:2px 8px;border-radius:4px;font-weight:800;">100.000đ + Vinh Danh</span>'
+              : '<span style="color:#888;">Khích lệ</span>';
+
+            return `
+              <tr>
+                <td><b>${rankBadge}</b></td>
+                <td><b style="color:var(--primary);">${escapeHtml(w.name)}</b></td>
+                <td><code>${escapeHtml(w.id)}</code></td>
+                <td><b style="color:#C62828;font-size:14px;">${(w.s || 0).toLocaleString("vi-VN")} điểm</b></td>
+                <td>${w.rounds || 1} vòng thi</td>
+                <td>${prizeBadge}</td>
+              </tr>
+            `;
+          }).join("") : '<tr><td colspan="6" style="text-align:center;">Tuần này chưa có lượt thi nào.</td></tr>';
+        }
+
         // Load Registered Users List
         try {
           const resUsers = await fetch("/api/admin/users", { headers: { "X-Admin-Code": getAdminAuthCode() || "09659" } });

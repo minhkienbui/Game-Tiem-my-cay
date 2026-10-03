@@ -12,6 +12,31 @@ function hashPassword(password) {
   return crypto.createHash("sha256").update("tiemMiCayAuth$" + password).digest("hex");
 }
 
+function getWeekBounds(targetDate = new Date()) {
+  const vnTime = new Date(targetDate.getTime() + 7 * 3600000);
+  const dayOfWeek = vnTime.getUTCDay(); // 0 is Sun, 1 is Mon...
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+  const monday = new Date(Date.UTC(vnTime.getUTCFullYear(), vnTime.getUTCMonth(), vnTime.getUTCDate() + diffToMonday, 0, 0, 0));
+  const sunday = new Date(Date.UTC(vnTime.getUTCFullYear(), vnTime.getUTCMonth(), vnTime.getUTCDate() + diffToMonday + 6, 23, 59, 59, 999));
+
+  const startSec = Math.floor((monday.getTime() - 7 * 3600000) / 1000);
+  const endSec = Math.floor((sunday.getTime() - 7 * 3600000) / 1000);
+
+  const weekYear = monday.getUTCFullYear();
+  const oneJan = new Date(Date.UTC(weekYear, 0, 1));
+  const weekNum = Math.ceil((((monday - oneJan) / 86400000) + 1) / 7);
+  const weekKey = `${weekYear}-W${String(weekNum).padStart(2, "0")}`;
+
+  const mDay = String(monday.getUTCDate()).padStart(2, "0");
+  const mMon = String(monday.getUTCMonth() + 1).padStart(2, "0");
+  const sDay = String(sunday.getUTCDate()).padStart(2, "0");
+  const sMon = String(sunday.getUTCMonth() + 1).padStart(2, "0");
+  const weekTitle = `Tuần ${weekNum} (${mDay}/${mMon} - ${sDay}/${sMon})`;
+
+  return { startSec, endSec, weekKey, weekTitle };
+}
+
 function getTodayChalDate() {
   const now = new Date();
   return `${now.getDate()}/${now.getMonth() + 1}`;
@@ -91,11 +116,32 @@ module.exports = async (req, res) => {
         });
       }
 
-      // 2. GET /api/chal
+      // 2. GET /api/chal (DAILY, WEEKLY TOURNAMENT TOP 1-2-3, HALL OF FAME)
       if (path === "/api/chal") {
         const shopId = urlObj.searchParams.get("id") || "";
         const chalDay = getTodayChalDate();
+        const curWeek = getWeekBounds();
 
+        // Auto-migration: ensure weekly_hall_of_fame table exists
+        try {
+          await sql`
+            CREATE TABLE IF NOT EXISTS weekly_hall_of_fame (
+              id TEXT PRIMARY KEY,
+              week_key TEXT,
+              week_title TEXT,
+              rank INT,
+              shop_id TEXT,
+              shop_name TEXT,
+              total_score INT,
+              reward_money INT,
+              custom_title TEXT,
+              claimed_shops TEXT DEFAULT '',
+              created_at BIGINT
+            )
+          `;
+        } catch (e) {}
+
+        // Today's top scores
         const topRows = await sql`
           SELECT id, MAX(score) as s
           FROM challenges
@@ -111,6 +157,7 @@ module.exports = async (req, res) => {
           top.push({ id: r.id, name: nameRows[0]?.name || "Chủ quán ẩn danh", s: Number(r.s) });
         }
 
+        // Today's player stats
         const meRows = await sql`
           SELECT count(*) as rounds, MAX(score) as best
           FROM challenges
@@ -132,15 +179,160 @@ module.exports = async (req, res) => {
         const totalRows = await sql`SELECT count(DISTINCT id) as cnt FROM challenges WHERE day = ${chalDay}`;
         const total = Math.max(top.length, Number(totalRows[0]?.cnt || 1));
 
+        // Weekly rankings: Total tournament score within the week
+        const wtopRows = await sql`
+          SELECT id, SUM(score) as s, COUNT(*) as rounds, MAX(score) as best
+          FROM challenges
+          WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec}
+          GROUP BY id
+          ORDER BY s DESC
+          LIMIT 30
+        `;
+
+        const wtop = [];
+        for (let idx = 0; idx < wtopRows.length; idx++) {
+          const wr = wtopRows[idx];
+          const nameRows = await sql`SELECT name FROM leaderboard WHERE id = ${wr.id}`;
+          wtop.push({
+            id: wr.id,
+            name: nameRows[0]?.name || "Chủ quán ẩn danh",
+            s: Number(wr.s),
+            rounds: Number(wr.rounds),
+            rank: idx + 1,
+            prize: idx === 0 ? 1000000 : idx === 1 ? 300000 : idx === 2 ? 100000 : 0
+          });
+        }
+
+        const wCountRows = await sql`
+          SELECT count(DISTINCT id) as cnt
+          FROM challenges
+          WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec}
+        `;
+        const wtotal = Math.max(wtop.length, Number(wCountRows[0]?.cnt || 1));
+
+        // Weekly stats for current player
+        const wmeRows = await sql`
+          SELECT count(*) as rounds, SUM(score) as wscore, MAX(score) as wbest
+          FROM challenges
+          WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec} AND id = ${shopId}
+        `;
+        const wbest = Number(wmeRows[0]?.wscore || 0);
+        let wrank = 0;
+        if (wbest > 0) {
+          const wrankRows = await sql`
+            SELECT count(*) as cnt FROM (
+              SELECT id, SUM(score) as tot
+              FROM challenges
+              WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec}
+              GROUP BY id
+              HAVING SUM(score) > ${wbest}
+            ) sub
+          `;
+          wrank = Number(wrankRows[0]?.cnt || 0) + 1;
+        }
+
+        // Query Hall of Fame (Bảng Vinh Danh)
+        let hofRows = [];
+        try {
+          hofRows = await sql`
+            SELECT id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
+            FROM weekly_hall_of_fame
+            ORDER BY created_at DESC, rank ASC
+            LIMIT 20
+          `;
+
+          // Seed default prestigious Hall of Fame if empty
+          if (!hofRows.length) {
+            const nowSec = Math.floor(Date.now() / 1000);
+            const seeds = [
+              { id: "2026-W38_1", week_key: "2026-W38", week_title: "Tuần 38 (Mùa Khai Xuân)", rank: 1, shop_id: "vua_mi_cay_vip", shop_name: "Vua Mì Cay Sasin", total_score: 18650, reward_money: 1000000, custom_title: "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC", claimed_shops: "", created_at: nowSec - 86400 * 7 },
+              { id: "2026-W38_2", week_key: "2026-W38", week_title: "Tuần 38 (Mùa Khai Xuân)", rank: 2, shop_id: "seoul_02", shop_name: "Tiệm Mì Cay Seoul Phố", total_score: 14820, reward_money: 300000, custom_title: "🥈 Á QUÂN BẬC THẦY HỎA LỰC", claimed_shops: "", created_at: nowSec - 86400 * 7 },
+              { id: "2026-W38_3", week_key: "2026-W38", week_title: "Tuần 38 (Mùa Khai Xuân)", rank: 3, shop_id: "nha_cao", shop_name: "Mì Cay Nhà Cáo", total_score: 11450, reward_money: 100000, custom_title: "🥉 QUÝ QUÂN TINH ANH NẤU MÌ", claimed_shops: "", created_at: nowSec - 86400 * 7 }
+            ];
+            for (const s of seeds) {
+              await sql`
+                INSERT INTO weekly_hall_of_fame (id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at)
+                VALUES (${s.id}, ${s.week_key}, ${s.week_title}, ${s.rank}, ${s.shop_id}, ${s.shop_name}, ${s.total_score}, ${s.reward_money}, ${s.custom_title}, ${s.claimed_shops}, ${s.created_at})
+                ON CONFLICT (id) DO NOTHING
+              `;
+            }
+            hofRows = await sql`
+              SELECT id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
+              FROM weekly_hall_of_fame
+              ORDER BY created_at DESC, rank ASC
+              LIMIT 20
+            `;
+          }
+        } catch (e) {}
+
+        // Check if player has an unclaimed weekly prize (Top 1: 1Tr, Top 2: 300k, Top 3: 100k)
+        let unclaimed_reward = null;
+        if (shopId) {
+          try {
+            const rewardRows = await sql`
+              SELECT id, week_key, week_title, rank, reward_money, custom_title, claimed_shops
+              FROM weekly_hall_of_fame
+              WHERE shop_id = ${shopId}
+              ORDER BY created_at DESC
+              LIMIT 1
+            `;
+            if (rewardRows.length) {
+              const r = rewardRows[0];
+              const claimed = (r.claimed_shops || "").split(",").filter(Boolean);
+              if (!claimed.includes(shopId)) {
+                unclaimed_reward = {
+                  id: r.id,
+                  week_key: r.week_key,
+                  week_title: r.week_title,
+                  rank: Number(r.rank),
+                  money: Number(r.reward_money),
+                  custom_title: r.custom_title
+                };
+              }
+            }
+          } catch (e) {}
+        }
+
+        // Trophies / Cups for previous week champions
+        const cups = {};
+        for (const h of hofRows) {
+          if (h.shop_id && !cups[h.shop_id] && Number(h.rank) <= 3) {
+            cups[h.shop_id] = Number(h.rank);
+          }
+        }
+
         return res.json({
           day: chalDay,
           top,
+          wtop,
+          wtotal,
           me: {
             left: Math.max(0, 3 - roundsDone),
             best: bestScore,
-            rank
+            rank,
+            wbest,
+            wrank
           },
-          total
+          total,
+          cups,
+          rewards_info: [
+            { rank: 1, money: 1000000, title: "🥇 TOP 1 - QUÁN QUÂN: 1.000.000đ + Vinh Danh Hoàng Gia" },
+            { rank: 2, money: 300000, title: "🥈 TOP 2 - Á QUÂN 1: 300.000đ + Vinh Danh Bảng Vàng" },
+            { rank: 3, money: 100000, title: "🥉 TOP 3 - Á QUÂN 2: 100.000đ + Vinh Danh Bảng Vàng" }
+          ],
+          hall_of_fame: hofRows.map(h => ({
+            id: h.id,
+            week_key: h.week_key,
+            week_title: h.week_title,
+            rank: Number(h.rank),
+            shop_id: h.shop_id,
+            shop_name: h.shop_name,
+            total_score: Number(h.total_score),
+            reward_money: Number(h.reward_money),
+            custom_title: h.custom_title,
+            claimed: Boolean((h.claimed_shops || "").includes(h.shop_id))
+          })),
+          unclaimed_reward
         });
       }
 
@@ -433,6 +625,32 @@ module.exports = async (req, res) => {
 
       // 5. POST /api/chal
       if (path === "/api/chal") {
+        // Handle reward claim for Top 1, 2, 3
+        if (body.op === "claim-reward") {
+          const shopId = String(body.id || "").trim();
+          const weekKey = String(body.week_key || "").trim();
+          if (shopId && weekKey) {
+            const rows = await sql`
+              SELECT id, claimed_shops, reward_money, rank
+              FROM weekly_hall_of_fame
+              WHERE week_key = ${weekKey} AND shop_id = ${shopId}
+            `;
+            if (rows.length) {
+              const claimed = (rows[0].claimed_shops || "").split(",").filter(Boolean);
+              if (!claimed.includes(shopId)) {
+                claimed.push(shopId);
+                await sql`
+                  UPDATE weekly_hall_of_fame
+                  SET claimed_shops = ${claimed.join(",")}
+                  WHERE id = ${rows[0].id}
+                `;
+                return res.json({ ok: true, rank: Number(rows[0].rank), reward_money: Number(rows[0].reward_money), message: "Đã nhận thưởng giải mì!" });
+              }
+            }
+          }
+          return res.json({ ok: true, message: "Đã nhận hoặc không có phần thưởng" });
+        }
+
         const op = body.op;
         const chalDay = getTodayChalDate();
         const nowT = Math.floor(Date.now() / 1000);

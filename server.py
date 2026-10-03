@@ -22,7 +22,7 @@ import random
 import string
 import time
 from urllib.parse import urlparse, parse_qs
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 
 def hash_password(password):
@@ -134,6 +134,21 @@ def init_db():
             )
         """)
         db.execute("""
+            CREATE TABLE IF NOT EXISTS weekly_hall_of_fame (
+                id TEXT PRIMARY KEY,
+                week_key TEXT,
+                week_title TEXT,
+                rank INT,
+                shop_id TEXT,
+                shop_name TEXT,
+                total_score INT,
+                reward_money INT,
+                custom_title TEXT,
+                claimed_shops TEXT DEFAULT '',
+                created_at BIGINT
+            )
+        """)
+        db.execute("""
             CREATE TABLE IF NOT EXISTS challenges (
                 id TEXT,
                 day TEXT,
@@ -173,6 +188,20 @@ def init_db():
             )
         """)
 
+        db.execute("SELECT COUNT(*) FROM weekly_hall_of_fame")
+        hof_cnt = db.fetchone()
+        if hof_cnt and hof_cnt[0] == 0:
+            now_sec = int(time.time())
+            hof_seeds = [
+                ("2026-W38_1", "2026-W38", "Tuần 38 (Mùa Khai Xuân)", 1, "vua_mi_cay_vip", "Vua Mì Cay Sasin", 18650, 1000000, "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC", "", now_sec - 86400*7),
+                ("2026-W38_2", "2026-W38", "Tuần 38 (Mùa Khai Xuân)", 2, "seoul_02", "Tiệm Mì Cay Seoul Phố", 14820, 300000, "🥈 Á QUÂN BẬC THẦY HỎA LỰC", "", now_sec - 86400*7),
+                ("2026-W38_3", "2026-W38", "Tuần 38 (Mùa Khai Xuân)", 3, "nha_cao", "Mì Cay Nhà Cáo", 11450, 100000, "🥉 QUÝ QUÂN TINH ANH NẤU MÌ", "", now_sec - 86400*7)
+            ]
+            db.executemany("""
+                INSERT INTO weekly_hall_of_fame (id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, hof_seeds)
+
         db.execute("SELECT COUNT(*) FROM leaderboard")
         row = db.fetchone()
         if row and row[0] == 0:
@@ -201,6 +230,22 @@ def init_db():
 init_db()
 
 # ----------------- HELPER FUNCTIONS -----------------
+def get_week_bounds(target_date=None):
+    if target_date is None:
+        target_date = datetime.now()
+    # Monday is 0, Sunday is 6
+    day_of_week = target_date.weekday()
+    monday = target_date - timedelta(days=day_of_week, hours=target_date.hour, minutes=target_date.minute, seconds=target_date.second, microseconds=target_date.microsecond)
+    sunday = monday + timedelta(days=6, hours=23, minutes=59, seconds=59)
+    start_sec = int(monday.timestamp())
+    end_sec = int(sunday.timestamp())
+    iso_year, iso_week, _ = monday.isocalendar()
+    week_key = f"{iso_year}-W{iso_week:02d}"
+    m_str = monday.strftime("%d/%m")
+    s_str = sunday.strftime("%d/%m")
+    week_title = f"Tuần {iso_week} ({m_str} - {s_str})"
+    return start_sec, end_sec, week_key, week_title
+
 def get_today_chal_date():
     now = datetime.now()
     return f"{now.day}/{now.month}"
@@ -335,6 +380,7 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         if path == "/api/chal":
             shop_id = params.get("id", [""])[0]
             chal_day = get_today_chal_date()
+            start_sec, end_sec, week_key, week_title = get_week_bounds()
             conn = DB()
             cur = conn
 
@@ -349,7 +395,6 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             ''', (chal_day,))
             top_rows = cur.fetchall()
 
-            # Get names from leaderboard
             top = []
             for r in top_rows:
                 cur.execute('SELECT name FROM leaderboard WHERE id = ?', (r[0],))
@@ -367,26 +412,137 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             rounds_done = me_row[0] if me_row else 0
             best_score = me_row[1] if me_row and me_row[1] else 0
 
-            # Compute rank
-            cur.execute('''
-                SELECT COUNT(DISTINCT id) FROM challenges WHERE day = ? AND score > ?
-            ''', (chal_day, best_score))
+            cur.execute('SELECT COUNT(DISTINCT id) FROM challenges WHERE day = ? AND score > ?', (chal_day, best_score))
             rank = cur.fetchone()[0] + 1 if best_score > 0 else 0
 
             cur.execute('SELECT COUNT(DISTINCT id) FROM challenges WHERE day = ?', (chal_day,))
             total_players = max(len(top), cur.fetchone()[0])
+
+            # Weekly rankings: Total tournament score within the week
+            cur.execute('''
+                SELECT id, SUM(score) as tot_score, COUNT(*) as rounds
+                FROM challenges
+                WHERE created_at >= ? AND created_at <= ?
+                GROUP BY id
+                ORDER BY tot_score DESC
+                LIMIT 30
+            ''', (start_sec, end_sec))
+            wtop_rows = cur.fetchall()
+
+            wtop = []
+            for idx, wr in enumerate(wtop_rows):
+                cur.execute('SELECT name FROM leaderboard WHERE id = ?', (wr[0],))
+                name_row = cur.fetchone()
+                name = name_row[0] if name_row else "Chủ quán ẩn danh"
+                prize = 1000000 if idx == 0 else (300000 if idx == 1 else (100000 if idx == 2 else 0))
+                wtop.append({
+                    "id": wr[0],
+                    "name": name,
+                    "s": wr[1],
+                    "rounds": wr[2],
+                    "rank": idx + 1,
+                    "prize": prize
+                })
+
+            cur.execute('SELECT COUNT(DISTINCT id) FROM challenges WHERE created_at >= ? AND created_at <= ?', (start_sec, end_sec))
+            wtotal = max(len(wtop), cur.fetchone()[0])
+
+            # Player's weekly total
+            cur.execute('''
+                SELECT COUNT(*), SUM(score)
+                FROM challenges
+                WHERE created_at >= ? AND created_at <= ? AND id = ?
+            ''', (start_sec, end_sec, shop_id))
+            wme_row = cur.fetchone()
+            wbest = wme_row[1] if wme_row and wme_row[1] else 0
+            wrank = 0
+            if wbest > 0:
+                cur.execute('''
+                    SELECT COUNT(*) FROM (
+                        SELECT id, SUM(score) as tot FROM challenges
+                        WHERE created_at >= ? AND created_at <= ?
+                        GROUP BY id HAVING tot > ?
+                    )
+                ''', (start_sec, end_sec, wbest))
+                wrank = cur.fetchone()[0] + 1
+
+            # Hall of Fame
+            cur.execute('''
+                SELECT id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
+                FROM weekly_hall_of_fame
+                ORDER BY created_at DESC, rank ASC
+                LIMIT 20
+            ''')
+            hof_raw = cur.fetchall()
+            if not hof_raw:
+                now_sec = int(time.time())
+                seeds = [
+                    ("2026-W38_1", "2026-W38", "Tuần 38 (Mùa Khai Xuân)", 1, "vua_mi_cay_vip", "Vua Mì Cay Sasin", 18650, 1000000, "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC", "", now_sec - 86400*7),
+                    ("2026-W38_2", "2026-W38", "Tuần 38 (Mùa Khai Xuân)", 2, "seoul_02", "Tiệm Mì Cay Seoul Phố", 14820, 300000, "🥈 Á QUÂN BẬC THẦY HỎA LỰC", "", now_sec - 86400*7),
+                    ("2026-W38_3", "2026-W38", "Tuần 38 (Mùa Khai Xuân)", 3, "nha_cao", "Mì Cay Nhà Cáo", 11450, 100000, "🥉 QUÝ QUÂN TINH ANH NẤU MÌ", "", now_sec - 86400*7)
+                ]
+                cur.executemany('''
+                    INSERT OR IGNORE INTO weekly_hall_of_fame (id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', seeds)
+                conn.commit()
+                cur.execute('''
+                    SELECT id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
+                    FROM weekly_hall_of_fame
+                    ORDER BY created_at DESC, rank ASC
+                    LIMIT 20
+                ''')
+                hof_raw = cur.fetchall()
+
+            hall_of_fame = []
+            cups = {}
+            for h in hof_raw:
+                hall_of_fame.append({
+                    "id": h[0], "week_key": h[1], "week_title": h[2], "rank": h[3],
+                    "shop_id": h[4], "shop_name": h[5], "total_score": h[6],
+                    "reward_money": h[7], "custom_title": h[8], "claimed": bool(h[4] in (h[9] or "").split(","))
+                })
+                if h[4] and h[4] not in cups and h[3] <= 3:
+                    cups[h[4]] = h[3]
+
+            unclaimed_reward = None
+            if shop_id:
+                cur.execute('''
+                    SELECT id, week_key, week_title, rank, reward_money, custom_title, claimed_shops
+                    FROM weekly_hall_of_fame
+                    WHERE shop_id = ?
+                    ORDER BY created_at DESC LIMIT 1
+                ''', (shop_id,))
+                rw = cur.fetchone()
+                if rw and shop_id not in (rw[6] or "").split(","):
+                    unclaimed_reward = {
+                        "id": rw[0], "week_key": rw[1], "week_title": rw[2],
+                        "rank": rw[3], "money": rw[4], "custom_title": rw[5]
+                    }
+
             conn.close()
 
-            # Return flat format expected by _A
             return self.send_json({
                 "day": chal_day,
                 "top": top,
+                "wtop": wtop,
+                "wtotal": max(1, wtotal),
                 "me": {
                     "left": max(0, 3 - rounds_done),
                     "best": best_score,
-                    "rank": rank
+                    "rank": rank,
+                    "wbest": wbest,
+                    "wrank": wrank
                 },
-                "total": max(1, total_players)
+                "total": max(1, total_players),
+                "cups": cups,
+                "rewards_info": [
+                    { "rank": 1, "money": 1000000, "title": "🥇 TOP 1 - QUÁN QUÂN: 1.000.000đ + Vinh Danh Hoàng Gia" },
+                    { "rank": 2, "money": 300000, "title": "🥈 TOP 2 - Á QUÂN 1: 300.000đ + Vinh Danh Bảng Vàng" },
+                    { "rank": 3, "money": 100000, "title": "🥉 TOP 3 - Á QUÂN 2: 100.000đ + Vinh Danh Bảng Vàng" }
+                ],
+                "hall_of_fame": hall_of_fame,
+                "unclaimed_reward": unclaimed_reward
             })
 
         # 3. GET /api/sync (Download save from cloud)
@@ -673,6 +829,25 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         # 2. POST /api/chal (Tournament challenge actions)
         if path == "/api/chal":
             op = body.get("op")
+            if op == "claim-reward":
+                shop_id = body.get("id", "").strip()
+                week_key = body.get("week_key", "").strip()
+                if shop_id and week_key:
+                    conn = DB()
+                    cur = conn
+                    cur.execute("SELECT id, claimed_shops, reward_money, rank FROM weekly_hall_of_fame WHERE week_key = ? AND shop_id = ?", (week_key, shop_id))
+                    r = cur.fetchone()
+                    if r:
+                        claimed = [x for x in (r[1] or "").split(",") if x]
+                        if shop_id not in claimed:
+                            claimed.append(shop_id)
+                            cur.execute("UPDATE weekly_hall_of_fame SET claimed_shops = ? WHERE id = ?", (",".join(claimed), r[0]))
+                            conn.commit()
+                            conn.close()
+                            return self.send_json({"ok": True, "rank": r[3], "reward_money": r[2]})
+                    conn.close()
+                return self.send_json({"ok": True})
+
             chal_day = get_today_chal_date()
             conn = DB()
             cur = conn
