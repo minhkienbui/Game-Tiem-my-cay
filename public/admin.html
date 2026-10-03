@@ -224,12 +224,19 @@
       <h2 style="font-family:var(--font-display);color:#5A2334;font-size:22px;margin-bottom:6px;">Xác Thực Quản Trị</h2>
       <p style="font-size:13px;color:#7E655B;margin-bottom:20px;">Nhập mã code bảo mật để mở khóa bảng điều khiển:</p>
 
-      <div style="margin-bottom:18px;">
-        <input type="password" id="adminPinInput" maxlength="10" placeholder="•••••" style="font-size:28px;letter-spacing:10px;text-align:center;padding:10px 14px;width:100%;border:2px solid #EADBDA;border-radius:12px;outline:none;font-family:inherit;box-sizing:border-box;" autofocus onkeydown="if(event.key==='Enter')verifyAdminPin()">
-        <div id="pinError" style="color:#C62828;font-size:13px;font-weight:700;margin-top:8px;min-height:20px;"></div>
-      </div>
+      <form onsubmit="event.preventDefault(); verifyAdminPin();" style="margin:0;">
+        <div style="margin-bottom:14px;">
+          <input type="password" id="adminPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="10" placeholder="•••••" style="font-size:28px;letter-spacing:10px;text-align:center;padding:10px 14px;width:100%;border:2px solid #EADBDA;border-radius:12px;outline:none;font-family:inherit;box-sizing:border-box;" autofocus autocomplete="current-password">
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;font-size:12px;color:#7E655B;">
+            <label style="cursor:pointer;user-select:none;">
+              <input type="checkbox" onchange="document.getElementById('adminPinInput').type = this.checked ? 'text' : 'password'"> Hiện mã code
+            </label>
+          </div>
+          <div id="pinError" style="color:#C62828;font-size:13px;font-weight:700;margin-top:8px;min-height:20px;"></div>
+        </div>
 
-      <button type="button" class="btn-primary" onclick="verifyAdminPin()" style="width:100%;padding:13px;font-size:15px;border-radius:10px;cursor:pointer;">🔓 Mở Khóa Bảng Admin</button>
+        <button type="submit" class="btn-primary" style="width:100%;padding:13px;font-size:15px;border-radius:10px;cursor:pointer;font-weight:700;">🔓 Mở Khóa Bảng Admin</button>
+      </form>
       <div style="margin-top:18px;">
         <a href="/" style="font-size:13px;color:#8A6A66;text-decoration:none;font-weight:600;">⬅ Quay lại trang game</a>
       </div>
@@ -586,7 +593,7 @@
       try {
         const res = await fetch("/api/admin/user/delete", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" },
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
           body: JSON.stringify({ username })
         });
         if (res.ok) {
@@ -608,7 +615,7 @@
       try {
         const res = await fetch("/api/admin/user/reset-password", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" },
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
           body: JSON.stringify({ username, newPassword: newPwd })
         });
         if (res.ok) {
@@ -634,7 +641,7 @@
       try {
         const res = await fetch("/api/admin/user/assign-code", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" },
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
           body: JSON.stringify({ username })
         });
         const d = await res.json();
@@ -665,7 +672,7 @@
 
       try {
         const res = await fetch("/api/admin/store-code/lookup?code=" + encodeURIComponent(code), {
-          headers: { "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" }
+          headers: { "X-Admin-Code": getAdminAuthCode() || "09659" }
         });
         const d = await res.json();
         if (!d.ok) {
@@ -720,7 +727,7 @@
       });
     }
 
-    function viewUserSave(username) {
+    async function viewUserSave(username) {
       try {
         const res = await fetch("/api/auth/save?username=" + encodeURIComponent(username));
         if (res.ok) {
@@ -795,12 +802,13 @@
         // Load Challenges
         const resChal = await fetch("/api/chal");
         const dataChal = await resChal.json();
-        const chalList = dataChal.j?.top || [];
+        const chalList = dataChal.top || dataChal.j?.top || [];
+        const chalDay = dataChal.day || dataChal.j?.day || "Hôm nay";
         document.getElementById("metricChallenges").textContent = chalList.length;
 
         // Load Registered Users List
         try {
-          const resUsers = await fetch("/api/admin/users", { headers: { "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" } });
+          const resUsers = await fetch("/api/admin/users", { headers: { "X-Admin-Code": getAdminAuthCode() || "09659" } });
           if (resUsers.ok) {
             const dataU = await resUsers.json();
             window.rawUsersList = dataU.users || [];
@@ -814,7 +822,7 @@
         const chalTbody = document.getElementById("challengesBody");
         chalTbody.innerHTML = chalList.length ? chalList.map(c => `
           <tr>
-            <td>${dataChal.j.day}</td>
+            <td>${chalDay}</td>
             <td><b>${escapeHtml(c.name)}</b> (<code>${c.id}</code>)</td>
             <td style="font-weight:700; color:var(--primary)">${c.s} điểm</td>
             <td>-</td>
@@ -826,7 +834,7 @@
         `).join("") : '<tr><td colspan="8" style="text-align:center;">Chưa có lượt thi nào hôm nay.</td></tr>';
 
         // Load Admin Cloud Saves
-        const resAdmin = await fetch("/api/admin/overview", { headers: { "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" } });
+        const resAdmin = await fetch("/api/admin/overview", { headers: { "X-Admin-Code": getAdminAuthCode() || "09659" } });
         if (resAdmin.ok) {
           const admData = await resAdmin.json();
           document.getElementById("metricSaves").textContent = admData.savesCount || 0;
@@ -874,7 +882,7 @@
       try {
         const res = await fetch("/api/admin/player/delete", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" },
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
           body: JSON.stringify({ id })
         });
         if (res.ok) {
@@ -897,7 +905,7 @@
       try {
         const res = await fetch("/api/lb", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" },
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
           body: JSON.stringify({
             id,
             name,
@@ -927,7 +935,7 @@
       try {
         const res = await fetch("/api/lb", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" },
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
           body: JSON.stringify({ id, name, profit, lv, day: 5, served: 50, rate: 4.8 })
         });
         if (res.ok) {
@@ -944,7 +952,7 @@
       try {
         const res = await fetch("/api/admin/save/delete", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": sessionStorage.getItem("adminAuthCode") || "" },
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
           body: JSON.stringify({ code })
         });
         if (res.ok) {
@@ -965,8 +973,12 @@
     
     const ADMIN_CORRECT_CODE = "09659";
 
+    function getAdminAuthCode() {
+      return sessionStorage.getItem("adminAuthCode") || localStorage.getItem("adminAuthCode") || "";
+    }
+
     function checkAdminAuth() {
-      const code = sessionStorage.getItem("adminAuthCode");
+      const code = getAdminAuthCode();
       const lockScreen = document.getElementById("adminLockScreen");
       if (code === ADMIN_CORRECT_CODE) {
         if (lockScreen) lockScreen.style.display = "none";
@@ -975,34 +987,41 @@
         if (lockScreen) {
           lockScreen.style.display = "flex";
           const inp = document.getElementById("adminPinInput");
-          if (inp) { inp.value = ""; inp.focus(); }
+          if (inp) { inp.value = ""; setTimeout(() => inp.focus(), 100); }
         }
         return false;
       }
     }
 
     function verifyAdminPin() {
-      const val = (document.getElementById("adminPinInput")?.value || "").trim();
+      const inp = document.getElementById("adminPinInput");
+      const val = (inp?.value || "").trim();
       const err = document.getElementById("pinError");
       if (val === ADMIN_CORRECT_CODE) {
         sessionStorage.setItem("adminAuthCode", ADMIN_CORRECT_CODE);
-        document.getElementById("adminLockScreen").style.display = "none";
-        showToast("Đã xác thực mã quản trị thành công!");
+        localStorage.setItem("adminAuthCode", ADMIN_CORRECT_CODE);
+        const lockScreen = document.getElementById("adminLockScreen");
+        if (lockScreen) lockScreen.style.display = "none";
+        showToast("✓ Đã xác thực mã quản trị thành công!");
         loadAllData();
       } else {
         if (err) err.textContent = "❌ Mã code không chính xác! Vui lòng thử lại.";
-        const inp = document.getElementById("adminPinInput");
         if (inp) { inp.value = ""; inp.focus(); }
       }
     }
 
     function lockAdmin() {
       sessionStorage.removeItem("adminAuthCode");
+      localStorage.removeItem("adminAuthCode");
       checkAdminAuth();
       showToast("Đã khóa bảng quản trị.");
     }
 
-    window.addEventListener("DOMContentLoaded", () => { if (checkAdminAuth()) loadAllData(); });
+    if (document.readyState === "loading") {
+      window.addEventListener("DOMContentLoaded", () => { if (checkAdminAuth()) loadAllData(); });
+    } else {
+      if (checkAdminAuth()) loadAllData();
+    }
 
   </script>
 </body>
