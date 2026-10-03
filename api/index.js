@@ -37,6 +37,26 @@ function getWeekBounds(targetDate = new Date()) {
   return { startSec, endSec, weekKey, weekTitle };
 }
 
+const DEFAULT_GAME_CONFIG = {
+  announcement_active: false,
+  announcement_text: "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 1.000.000đ tiền mặt vào két quán!",
+  announcement_type: "event",
+  daySec: 210,
+  startMoney: 400000,
+  rent: 40000,
+  util: 15000,
+  appFee: 20,
+  policeFee: 100000,
+  catchRate: 50,
+  theftEnabled: true,
+  chalRounds: 3,
+  rewardTop1: 1000000,
+  rewardTop2: 300000,
+  rewardTop3: 100000,
+  taxCycleDays: 3,
+  taxBaseRate: 50000
+};
+
 function getTodayChalDate() {
   const now = new Date();
   return `${now.getDate()}/${now.getMonth() + 1}`;
@@ -75,6 +95,17 @@ module.exports = async (req, res) => {
   }
 
   const sql = neon(dbUrl);
+  // Auto-migration: ensure game_config table exists
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS game_config (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at BIGINT
+      )
+    `;
+  } catch (e) {}
+
   // Auto-migration: ensure store_code column exists in users
   try {
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS store_code TEXT`;
@@ -98,6 +129,42 @@ module.exports = async (req, res) => {
   try {
     // ----------------- GET ENDPOINTS -----------------
     if (req.method === "GET") {
+      // GET /api/config (Public Game Configuration)
+      if (path === "/api/config") {
+        let cfg = { ...DEFAULT_GAME_CONFIG };
+        let lastUpdated = 0;
+        try {
+          const rows = await sql`SELECT key, value, updated_at FROM game_config`;
+          for (const r of rows) {
+            try {
+              cfg[r.key] = JSON.parse(r.value);
+            } catch (e) {
+              cfg[r.key] = r.value;
+            }
+            if (Number(r.updated_at) > lastUpdated) lastUpdated = Number(r.updated_at);
+          }
+        } catch (e) {}
+        return res.json({ ok: true, config: cfg, updated_at: lastUpdated, ...cfg });
+      }
+
+      // GET /api/admin/config (Admin Protected Game Configuration)
+      if (path === "/api/admin/config") {
+        let cfg = { ...DEFAULT_GAME_CONFIG };
+        let lastUpdated = 0;
+        try {
+          const rows = await sql`SELECT key, value, updated_at FROM game_config`;
+          for (const r of rows) {
+            try {
+              cfg[r.key] = JSON.parse(r.value);
+            } catch (e) {
+              cfg[r.key] = r.value;
+            }
+            if (Number(r.updated_at) > lastUpdated) lastUpdated = Number(r.updated_at);
+          }
+        } catch (e) {}
+        return res.json({ ok: true, config: cfg, updated_at: lastUpdated });
+      }
+
       // 1. GET /api/lb
       if (path === "/api/lb") {
         const top = await sql`

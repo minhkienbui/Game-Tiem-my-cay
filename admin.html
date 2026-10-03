@@ -1,13 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Trang Quản Trị - Tiệm Mì Cay Admin Panel</title>
-  <link rel="icon" href="/icon-192.png" type="image/png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tiệm Mì Cay · Bảng Quản Trị Hệ Thống</title>
+  <link rel="icon" href="/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Paytone+One&family=Mali:wght@400;500;600;700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;500;600;700&family=Paytone+One&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #F8F9FA;
@@ -17,10 +17,10 @@
       --primary: #EF4B3F;
       --primary-dark: #C23328;
       --accent: #F7C948;
-      --success: #3E9B4F;
+      --success: #2E7D32;
       --border: #EADBDA;
-      --sidebar: #5A2334;
-      --sidebar-hover: #7A3346;
+      --sidebar: #4A1926;
+      --sidebar-hover: #692437;
       --font-display: 'Paytone One', system-ui, sans-serif;
       --font-body: 'Mali', system-ui, sans-serif;
     }
@@ -32,6 +32,7 @@
       display: flex;
       min-height: 100vh;
     }
+
     /* Sidebar */
     aside {
       width: 260px;
@@ -40,27 +41,30 @@
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+      z-index: 100;
     }
     .brand {
-      padding: 20px;
+      padding: 20px 18px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    .brand img { width: 36px; height: 36px; border-radius: 8px; }
-    .brand h1 { font-family: var(--font-display); font-size: 19px; letter-spacing: 0.5px; }
-    .nav-links { list-style: none; padding: 15px 0; flex: 1; }
+    .brand img { width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 3px 8px rgba(0,0,0,0.25); }
+    .brand h1 { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.5px; line-height: 1.2; }
+    .brand small { display: block; font-size: 11px; color: rgba(255,255,255,0.7); font-family: var(--font-body); }
+
+    .nav-links { list-style: none; padding: 15px 0; flex: 1; overflow-y: auto; }
     .nav-links li a {
       display: flex;
       align-items: center;
       gap: 12px;
       padding: 12px 20px;
-      color: rgba(255,255,255,0.8);
+      color: rgba(255,255,255,0.85);
       text-decoration: none;
       font-weight: 600;
-      font-size: 14px;
+      font-size: 13.5px;
       transition: all 0.2s;
     }
     .nav-links li a:hover, .nav-links li.active a {
@@ -68,151 +72,280 @@
       color: #FFF;
       border-left: 4px solid var(--accent);
     }
+    .nav-links li a span.badge-cnt {
+      margin-left: auto;
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
     .back-game {
-      padding: 15px 20px;
+      padding: 18px;
       border-top: 1px solid rgba(255,255,255,0.1);
     }
     .back-btn {
       display: block;
       text-align: center;
-      background: var(--primary);
+      background: rgba(255,255,255,0.12);
       color: #fff;
-      text-decoration: none;
       padding: 10px;
       border-radius: 8px;
+      text-decoration: none;
       font-weight: 700;
       font-size: 13px;
+      transition: background 0.2s;
     }
+    .back-btn:hover { background: rgba(255,255,255,0.22); }
+
     /* Main Content */
     main {
       flex: 1;
-      padding: 30px;
+      padding: 25px 35px;
       overflow-y: auto;
-      max-width: 1200px;
+      max-width: 1400px;
     }
-    header {
+    header.main-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 25px;
+      flex-wrap: wrap;
+      gap: 15px;
     }
-    header h2 { font-family: var(--font-display); font-size: 24px; color: var(--sidebar); }
-    /* Metric Cards */
-    .grid-metrics {
+    .header-title h2 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      color: var(--sidebar);
+    }
+    .header-title p {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #E8F5E9;
+      color: #2E7D32;
+      border: 1px solid #A5D6A7;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .pin-chip {
+      background: #FFF3D6;
+      color: #B45309;
+      border: 1px solid #FCD34D;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* Metric Cards Grid */
+    .metric-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 18px;
-      margin-bottom: 30px;
+      margin-bottom: 25px;
     }
     .card-metric {
       background: var(--card-bg);
-      padding: 18px 20px;
       border-radius: 14px;
-      border: 1px solid var(--border);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      padding: 20px 18px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+      border: 1.5px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .card-metric small { color: var(--text-muted); font-size: 12px; font-weight: 600; text-transform: uppercase; }
-    .card-metric .val { font-family: var(--font-display); font-size: 26px; color: var(--primary); margin-top: 6px; }
-    /* Sections & Tables */
+    .card-metric:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    }
+    .card-metric .c-icon {
+      font-size: 26px;
+      margin-bottom: 8px;
+    }
+    .card-metric h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .card-metric .val {
+      font-family: var(--font-display);
+      font-size: 26px;
+      color: var(--sidebar);
+      margin: 6px 0 4px;
+    }
+    .card-metric small {
+      font-size: 11.5px;
+      color: #888;
+      font-weight: 600;
+    }
+
+    /* Panels & Tables */
     .sec-panel {
       background: var(--card-bg);
       border-radius: 14px;
-      border: 1px solid var(--border);
       padding: 22px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+      border: 1.5px solid var(--border);
       margin-bottom: 25px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
     }
     .panel-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 12px;
     }
-    .panel-head h3 { font-family: var(--font-display); font-size: 17px; color: var(--sidebar); }
+    .panel-head h3 {
+      font-family: var(--font-display);
+      font-size: 17px;
+      color: var(--sidebar);
+    }
+
+    /* Action Buttons */
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+      font-family: inherit;
+    }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-act {
+      background: #F1F3F5;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .btn-act:hover { background: #E9ECEF; }
+    .btn-del { color: #C92A2A; border-color: #FFA8A8; background: #FFF5F5; }
+    .btn-del:hover { background: #FFE3E3; }
+    .btn-edit { color: #1971C2; border-color: #A5D8FF; background: #E7F5FF; }
+    .btn-edit:hover { background: #D0EBFF; }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
     table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 13.5px;
+      font-size: 13px;
     }
-    th {
-      background: #FDF4F2;
-      color: var(--text-muted);
-      padding: 10px 14px;
-      font-weight: 700;
-      border-bottom: 2px solid var(--border);
-    }
-    td {
+    th, td {
       padding: 12px 14px;
       border-bottom: 1px solid var(--border);
     }
-    tr:hover td { background: #FFFAF8; }
+    th {
+      background: #F8F9FA;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    tbody tr:hover {
+      background: #FFFDF9;
+    }
+    code {
+      font-family: monospace;
+      background: #EADBDA;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
     .badge {
       display: inline-block;
       padding: 3px 8px;
-      border-radius: 99px;
+      border-radius: 12px;
       font-size: 11px;
       font-weight: 700;
+      white-space: nowrap;
     }
-    .badge-rank { background: #FFF4D9; color: #8A5D00; }
-    .badge-lv { background: #E8F5E9; color: #2E7D32; }
-    .btn-act {
-      padding: 5px 10px;
-      border-radius: 6px;
-      border: none;
-      font-weight: 700;
-      font-size: 12px;
-      cursor: pointer;
-      margin-right: 4px;
-    }
-    .btn-del { background: #FFEBEE; color: #C62828; }
-    .btn-del:hover { background: #FFCDD2; }
-    .btn-edit { background: #E3F2FD; color: #1565C0; }
-    .btn-edit:hover { background: #BBDEFB; }
-    .btn-primary {
-      background: var(--primary);
-      color: #fff;
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-    }
+    .badge-rank { background: #FFF3D6; color: #D97706; }
+    .badge-lv { background: #E3F2FD; color: #1E88E5; }
+
     /* Forms */
-    .form-group {
-      margin-bottom: 15px;
-    }
+    .form-group { margin-bottom: 16px; }
     .form-group label {
       display: block;
-      margin-bottom: 6px;
-      font-weight: 600;
       font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
     }
     .form-group input, .form-group select, .form-group textarea {
       width: 100%;
-      padding: 9px 12px;
-      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
       border-radius: 8px;
       font-family: inherit;
       font-size: 13.5px;
+      outline: none;
+      transition: border-color 0.2s;
     }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--primary);
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
     /* Toast */
     #admToast {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background: #333;
+      bottom: 25px;
+      right: 25px;
+      background: #2E7D32;
       color: #fff;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
+      padding: 12px 22px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+      transform: translateY(100px);
       opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-      z-index: 9999;
+      transition: all 0.3s;
+      z-index: 100000;
     }
-    #admToast.show { opacity: 1; }
+    #admToast.show { transform: translateY(0); opacity: 1; }
   </style>
 </head>
 <body>
@@ -222,7 +355,7 @@
     <div style="background:#FFF;padding:34px 28px;border-radius:20px;max-width:380px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.4);">
       <img src="/icon-192.png" style="width:68px;height:68px;border-radius:16px;margin-bottom:12px;box-shadow:0 4px 12px rgba(0,0,0,0.15);" alt="Logo">
       <h2 style="font-family:var(--font-display);color:#5A2334;font-size:22px;margin-bottom:6px;">Xác Thực Quản Trị</h2>
-      <p style="font-size:13px;color:#7E655B;margin-bottom:20px;">Nhập mã code bảo mật để mở khóa bảng điều khiển:</p>
+      <p style="font-size:13px;color:#7E655B;margin-bottom:18px;">Nhập mã code bảo mật để mở khóa bảng điều khiển:</p>
 
       <form onsubmit="event.preventDefault(); verifyAdminPin();" style="margin:0;">
         <div style="margin-bottom:14px;">
@@ -235,103 +368,145 @@
           <div id="pinError" style="color:#C62828;font-size:13px;font-weight:700;margin-top:8px;min-height:20px;"></div>
         </div>
 
-        <button type="submit" class="btn-primary" style="width:100%;padding:13px;font-size:15px;border-radius:10px;cursor:pointer;font-weight:700;">🔓 Mở Khóa Bảng Admin</button>
+        <button type="submit" class="btn-primary" style="width:100%;padding:13px;font-size:15px;border-radius:10px;cursor:pointer;font-weight:700;justify-content:center;">🔓 Mở Khóa Bảng Admin</button>
       </form>
+
       <div style="margin-top:18px;">
         <a href="/" style="font-size:13px;color:#8A6A66;text-decoration:none;font-weight:600;">⬅ Quay lại trang game</a>
       </div>
     </div>
   </div>
 
-
-  <!-- Sidebar -->
+  <!-- SIDEBAR NAVIGATION -->
   <aside>
     <div class="brand">
       <img src="/icon-192.png" alt="Logo">
-      <h1>Mì Cay Admin</h1>
+      <div>
+        <h1>TIỆM MÌ CAY</h1>
+        <small>Bảng Quản Trị Hệ Thống</small>
+      </div>
     </div>
     <ul class="nav-links">
       <li class="active"><a href="#overview" onclick="showTab('overview')">📊 Tổng Quan</a></li>
-      <li><a href="#users" onclick="showTab('users')">👥 Quản Lý Người Dùng</a></li>
-      <li><a href="#leaderboard" onclick="showTab('leaderboard')">🏆 Bảng Xếp Hạng</a></li>
-      <li><a href="#challenges" onclick="showTab('challenges')">🍜 Giải Mì Thi Đấu</a></li>
+      <li><a href="#users" onclick="showTab('users')">👥 Quản Lý Người Dùng <span class="badge-cnt" id="sideUserCount">0</span></a></li>
+      <li><a href="#leaderboard" onclick="showTab('leaderboard')">🏆 Bảng Xếp Hạng <span class="badge-cnt" id="sideShopCount">0</span></a></li>
+      <li><a href="#challenges" onclick="showTab('challenges')">🍜 Giải Mì & Vinh Danh</a></li>
       <li><a href="#cloudsaves" onclick="showTab('cloudsaves')">💾 Bản Lưu Đám Mây</a></li>
       <li><a href="#pranks" onclick="showTab('pranks')">💌 Chọc Quán & Quà</a></li>
       <li><a href="#config" onclick="showTab('config')">⚙️ Cấu Hình Game</a></li>
     </ul>
     <div class="back-game">
-      <button type="button" onclick="lockAdmin()" style="width:100%;background:rgba(255,255,255,0.12);color:#FFF;border:none;padding:9px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-bottom:8px;">🔒 Khóa Bảng Admin</button>
+      <button type="button" onclick="lockAdmin()" style="width:100%;background:rgba(255,255,255,0.12);color:#FFF;border:none;padding:10px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;margin-bottom:8px;">🔒 Khóa Bảng Admin</button>
       <a href="/" class="back-btn">⬅ Quay Lại Game</a>
     </div>
   </aside>
 
-  <!-- Main Content -->
+  <!-- MAIN VIEW -->
   <main>
-    <header>
-      <h2 id="viewTitle">Bảng Điều Khiển Tổng Quan</h2>
-      <div>
-        <button class="btn-primary" onclick="loadAllData()">🔄 Làm Mới Dữ Liệu</button>
+    <header class="main-header">
+      <div class="header-title">
+        <h2 id="pageTitle">📊 Tổng Quan Hệ Thống</h2>
+        <p id="pageSub">Báo cáo thời gian thực về dữ liệu người chơi, doanh thu và hoạt động máy chủ.</p>
+      </div>
+      <div class="header-actions">
+        <span class="status-chip">🟢 Neon Postgres Active</span>
+        <span class="pin-chip">🔑 Mã Admin: 09659</span>
+        <button class="btn-primary" onclick="loadAllData()" style="padding:7px 14px;font-size:12.5px;">🔄 Làm Mới</button>
       </div>
     </header>
 
-    <!-- METRICS OVERVIEW -->
-    <div class="grid-metrics">
-      <div class="card-metric" style="background:#FFF9F5; border-color:#F5D5CB;">
-        <small style="color:var(--primary);">👥 Tài Khoản Người Dùng</small>
-        <div class="val" id="metricTotalUsers" style="color:var(--sidebar);">0</div>
-      </div>
-      <div class="card-metric">
-        <small>Tổng Số Tiệm Mì</small>
-        <div class="val" id="metricTotalShops">0</div>
-      </div>
-      <div class="card-metric">
-        <small>Tổng Tô Mì Đã Bán</small>
-        <div class="val" id="metricTotalServed">0</div>
-      </div>
-      <div class="card-metric">
-        <small>Tổng Tiền Lãi Server</small>
-        <div class="val" id="metricTotalProfit">0đ</div>
-      </div>
-      <div class="card-metric">
-        <small>Lượt Thi Giải Mì</small>
-        <div class="val" id="metricChallenges">0</div>
-      </div>
-      <div class="card-metric">
-        <small>Bản Lưu Đám Mây</small>
-        <div class="val" id="metricSaves">0</div>
-      </div>
-    </div>
-
-    <!-- TAB 1: OVERVIEW & RECENT SHOPS -->
+    <!-- TAB 1: OVERVIEW DASHBOARD -->
     <div id="tab-overview" class="tab-pane">
-      <div class="sec-panel">
-        <div class="panel-head">
-          <h3>Top Tiệm Mì Dẫn Đầu Doanh Thu</h3>
+      <div class="metric-grid">
+        <div class="card-metric">
+          <div class="c-icon">👥</div>
+          <h4>Tổng Người Dùng</h4>
+          <div class="val" id="metricTotalUsers">0</div>
+          <small>Tài khoản đã đăng ký</small>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Hạng</th>
-              <th>Tên Quán</th>
-              <th>Cấp Bậc</th>
-              <th>Số Ngày</th>
-              <th>Tô Phục Vụ</th>
-              <th>Đánh Giá</th>
-              <th>Tổng Lãi</th>
-              <th>Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody id="topLeaderboardBody">
-            <tr><td colspan="8" style="text-align:center;">Đang tải dữ liệu...</td></tr>
-          </tbody>
-        </table>
+        <div class="card-metric">
+          <div class="c-icon">🏆</div>
+          <h4>Tổng Số Quán Mì</h4>
+          <div class="val" id="metricTotalShops">0</div>
+          <small>Đang tranh tài xếp hạng</small>
+        </div>
+        <div class="card-metric">
+          <div class="c-icon">🍜</div>
+          <h4>Tô Mì Đã Nấu</h4>
+          <div class="val" id="metricTotalServed">0</div>
+          <small>Tô đã bán toàn server</small>
+        </div>
+        <div class="card-metric">
+          <div class="c-icon">💰</div>
+          <h4>Doanh Thu Hệ Thống</h4>
+          <div class="val" id="metricTotalProfit">0đ</div>
+          <small>Tổng tiền két toàn hệ thống</small>
+        </div>
+        <div class="card-metric">
+          <div class="c-icon">💾</div>
+          <h4>Bản Lưu Đám Mây</h4>
+          <div class="val" id="metricSaves">0</div>
+          <small>Mã cửa hàng & Cloud save</small>
+        </div>
+        <div class="card-metric">
+          <div class="c-icon">🥇</div>
+          <h4>Giải Mì Hôm Nay</h4>
+          <div class="val" id="metricChallenges">0</div>
+          <small>Lượt thi đấu trong ngày</small>
+        </div>
+      </div>
+
+      <!-- Quick Tables: Recent Users & Top Leaderboard -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(450px, 1fr));gap:20px;">
+        <div class="sec-panel">
+          <div class="panel-head">
+            <h3>👥 Người Dùng Mới / Đăng Nhập Gần Nhất</h3>
+            <button class="btn-act" onclick="showTab('users')">Xem tất cả</button>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tài Khoản</th>
+                  <th>Cấp Quán</th>
+                  <th>Tiền Két</th>
+                  <th>Đăng Nhập Cuối</th>
+                </tr>
+              </thead>
+              <tbody id="overviewRecentUsersBody">
+                <tr><td colspan="4" style="text-align:center;">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="sec-panel">
+          <div class="panel-head">
+            <h3>🏆 Top 5 Tiệm Mì Xuất Sắc Nhất</h3>
+            <button class="btn-act" onclick="showTab('leaderboard')">Xem tất cả</button>
+          </div>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Hạng</th>
+                  <th>Tên Quán</th>
+                  <th>Cấp</th>
+                  <th>Doanh Thu</th>
+                </tr>
+              </thead>
+              <tbody id="overviewTopShopsBody">
+                <tr><td colspan="4" style="text-align:center;">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- TAB: USER MANAGEMENT & USAGE DATA -->
+    <!-- TAB 2: USERS MANAGEMENT (GIỮ NGUYÊN 100% DATA USER) -->
     <div id="tab-users" class="tab-pane" style="display:none;">
-      <div class="sec-panel">
-              <!-- SUPPORT BOX: TRA CỨU & NHẬN TIỆM BẰNG MÃ CỬA HÀNG -->
+      <!-- SUPPORT BOX: TRA CỨU & NHẬN TIỆM BẰNG MÃ CỬA HÀNG -->
       <div style="background:#FFF9F2;border:1.5px solid #FFD8A8;border-radius:12px;padding:16px 20px;margin-bottom:20px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
           <h4 style="margin:0;color:#A61E4D;font-size:15px;display:flex;align-items:center;gap:6px;">
@@ -349,167 +524,396 @@
         </div>
         <div id="lookupResultBox" style="margin-top:12px;display:none;background:#FFF;border:1.5px solid #EADBDA;border-radius:10px;padding:14px;font-size:13px;"></div>
       </div>
-<div class="panel-head">
-          <h3>👥 Danh Sách Tài Khoản Người Dùng & Dữ Liệu Sử Dụng</h3>
-          <input type="text" id="userSearchInput" placeholder="🔍 Tìm theo tài khoản..." oninput="filterUsersTable()" style="padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:260px;">
+
+      <div class="sec-panel">
+        <div class="panel-head">
+          <div>
+            <h3>👥 Danh Sách Tài Khoản Người Dùng & Dữ Liệu Lưu Trữ</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Toàn bộ tài khoản và tiến trình quán được đồng bộ an toàn trên Neon Serverless Postgres</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="userLevelFilter" onchange="filterUsersTable()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;">
+              <option value="all">Tất cả cấp độ</option>
+              <option value="1-10">Cấp 1 - 10</option>
+              <option value="11-20">Cấp 11 - 20</option>
+              <option value="21-35">Cấp 21 - 35</option>
+              <option value="36-50">Cấp 36 - 50</option>
+            </select>
+            <input type="text" id="userSearchInput" placeholder="🔍 Tìm theo tài khoản, mã tiệm, ID..." oninput="filterUsersTable()" style="padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:260px;">
+          </div>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tài Khoản</th>
-              <th>Mã Cửa Hàng</th>
-              <th>Cấp Quán</th>
-              <th>Ngày Chơi</th>
-              <th>Tiền Két</th>
-              <th>Lần Đăng Nhập Cuối</th>
-              <th>Lượt Vào</th>
-              <th>Thiết Bị / Trình Duyệt</th>
-              <th>Bản Lưu</th>
-              <th>Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody id="usersBody">
-            <tr><td colspan="11" style="text-align:center;">Đang tải danh sách người dùng...</td></tr>
-          </tbody>
-        </table>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Tài Khoản</th>
+                <th>Mã Cửa Hàng</th>
+                <th>Cấp Quán</th>
+                <th>Ngày Chơi</th>
+                <th>Tiền Két</th>
+                <th>Lần Đăng Nhập Cuối</th>
+                <th>Lượt Vào</th>
+                <th>Thiết Bị</th>
+                <th>Bản Lưu</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody">
+              <tr><td colspan="11" style="text-align:center;">Đang tải danh sách người dùng...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- TAB 2: FULL LEADERBOARD MANAGEMENT -->
+    <!-- TAB 3: LEADERBOARD -->
     <div id="tab-leaderboard" class="tab-pane" style="display:none;">
       <div class="sec-panel">
         <div class="panel-head">
-          <h3>Quản Lý Danh Sách Tất Cả Tiệm Mì</h3>
+          <div>
+            <h3>🏆 Quản Lý Danh Sách Tất Cả Tiệm Mì (Leaderboard)</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Bảng xếp hạng tổng doanh thu và đánh giá các tiệm mì toàn quốc</p>
+          </div>
           <button class="btn-primary" onclick="openAddPlayerModal()">+ Thêm Quán Mới</button>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Mã ID</th>
-              <th>Tên Quán</th>
-              <th>Cấp</th>
-              <th>Ngày</th>
-              <th>Tô Bán</th>
-              <th>Sao</th>
-              <th>Tổng Lãi</th>
-              <th>Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody id="fullLeaderboardBody">
-            <tr><td colspan="8" style="text-align:center;">Đang tải...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã ID</th>
+                <th>Tên Quán</th>
+                <th>Cấp Quán</th>
+                <th>Ngày Chơi</th>
+                <th>Tô Đã Bán</th>
+                <th>Đánh Giá</th>
+                <th>Lãi Tích Lũy</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="fullLeaderboardBody">
+              <tr><td colspan="8" style="text-align:center;">Đang tải danh sách quán mì...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- TAB 3: CHALLENGE TOURNAMENT MANAGEMENT -->
+    <!-- TAB 4: CHALLENGES & HALL OF FAME -->
     <div id="tab-challenges" class="tab-pane" style="display:none;">
+      <!-- BẢNG VINH DANH & CƠ CẤU GIẢI THƯỞNG TUẦN -->
+      <div class="sec-panel" style="margin-bottom:20px;background:#FFF9F2;border:1.5px solid #FFD8A8;">
+        <div class="panel-head" style="margin-bottom:10px;">
+          <div>
+            <h3 style="color:#C62828;margin:0;">🏆 Bảng Vinh Danh Tuần & Giải Thưởng Tiền Mặt</h3>
+            <p style="font-size:12.5px;color:#7E655B;margin:4px 0 0;">Cơ cấu giải thưởng sau 1 tuần tổng điểm: 🥇 Top 1: 1.000.000đ · 🥈 Top 2: 300.000đ · 🥉 Top 3: 100.000đ (Tiền két, không tăng XP)</p>
+          </div>
+          <button class="btn-primary" onclick="loadAllData()" style="padding:6px 14px;font-size:12px;">🔄 Cập Nhật</button>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Tuần Thi Đấu</th>
+                <th>Hạng</th>
+                <th>Tên Quán Quán Quân</th>
+                <th>Mã Quán</th>
+                <th>Tổng Điểm Tuần</th>
+                <th>Thưởng Tiền</th>
+                <th>Danh Hiệu Vinh Danh</th>
+                <th>Trạng Thái Nhận</th>
+              </tr>
+            </thead>
+            <tbody id="adminHofBody">
+              <tr><td colspan="8" style="text-align:center;">Đang tải bảng vinh danh...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- XẾP HẠNG TUẦN HIỆN TẠI -->
+      <div class="sec-panel" style="margin-bottom:20px;">
+        <div class="panel-head">
+          <div>
+            <h3>🔥 Bảng Xếp Hạng Giải Mì Tuần Này (Tổng Điểm Tích Lũy)</h3>
+            <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0;">Tổng hợp điểm tất cả các lượt thi trong tuần của các tiệm mì</p>
+          </div>
+          <span id="metricWeeklyTotal" class="badge badge-rank">0 Quán Đang Tranh Tài</span>
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Hạng Tuần</th>
+                <th>Tên Quán</th>
+                <th>Mã Quán</th>
+                <th>Tổng Điểm</th>
+                <th>Số Vòng Đã Thi</th>
+                <th>Thưởng Dự Kiến</th>
+              </tr>
+            </thead>
+            <tbody id="adminWeeklyBody">
+              <tr><td colspan="6" style="text-align:center;">Đang tải xếp hạng tuần...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LỊCH SỬ THI ĐẤU HÔM NAY -->
       <div class="sec-panel">
         <div class="panel-head">
-          <h3>Lịch Sử Thi Đấu Giải Mì Hôm Nay</h3>
+          <h3>⚡ Lịch Sử Thi Đấu Hôm Nay</h3>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Ngày Thi</th>
-              <th>Mã Quán</th>
-              <th>Điểm Số</th>
-              <th>Tô Đúng</th>
-              <th>Mì Chuẩn</th>
-              <th>Lỗi Sai</th>
-              <th>Khách Bỏ</th>
-              <th>Thời Gian</th>
-            </tr>
-          </thead>
-          <tbody id="challengesBody">
-            <tr><td colspan="8" style="text-align:center;">Đang tải...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Ngày Thi</th>
+                <th>Mã Quán</th>
+                <th>Điểm Số</th>
+                <th>Tô Đúng</th>
+                <th>Mì Chuẩn</th>
+                <th>Lỗi Sai</th>
+                <th>Khách Bỏ</th>
+                <th>Thời Gian</th>
+              </tr>
+            </thead>
+            <tbody id="challengesBody">
+              <tr><td colspan="8" style="text-align:center;">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- TAB 4: CLOUD SAVES -->
+    <!-- TAB 5: CLOUD SAVES -->
     <div id="tab-cloudsaves" class="tab-pane" style="display:none;">
       <div class="sec-panel">
         <div class="panel-head">
-          <h3>Danh Sách Mã Đồng Bộ Đám Mây (Cloud Saves)</h3>
+          <h3>💾 Danh Sách Mã Đồng Bộ Đám Mây (Cloud Saves)</h3>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Mã Đồng Bộ (8 Ký Tự)</th>
-              <th>Thời Gian Tạo</th>
-              <th>Hết Hạn Sau</th>
-              <th>Dung Lượng</th>
-              <th>Thao Tác</th>
-            </tr>
-          </thead>
-          <tbody id="cloudSavesBody">
-            <tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã Đồng Bộ (8 Ký Tự)</th>
+                <th>Thời Gian Tạo</th>
+                <th>Hạn Lưu Trữ</th>
+                <th>Dung Lượng</th>
+                <th>Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody id="cloudSavesBody">
+              <tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- TAB 5: SOCIAL PRANKS -->
+    <!-- TAB 6: SOCIAL PRANKS -->
     <div id="tab-pranks" class="tab-pane" style="display:none;">
       <div class="sec-panel">
         <div class="panel-head">
-          <h3>Nhật Ký Chọc Quán & Tặng Quà</h3>
+          <h3>💌 Lịch Sử Chọc Quán & Tặng Quà Giữa Người Chơi</h3>
         </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Từ Quán</th>
-              <th>Gửi Đến Quán</th>
-              <th>Loại Quà / Trêu Chọc</th>
-              <th>Trạng Thái</th>
-              <th>Thời Gian</th>
-            </tr>
-          </thead>
-          <tbody id="pranksBody">
-            <tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Quán Gửi</th>
+                <th>Quán Nhận</th>
+                <th>Loại Quà / Trò Chọc</th>
+                <th>Thời Gian</th>
+                <th>Trạng Thái</th>
+              </tr>
+            </thead>
+            <tbody id="pranksBody">
+              <tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- TAB 6: GAME CONFIG -->
+    <!-- TAB 7: REWORKED GAME CONFIGURATION (100% REAL BACKEND CONNECTION) -->
     <div id="tab-config" class="tab-pane" style="display:none;">
-      <div class="sec-panel">
+      <div class="sec-panel" style="border-left: 5px solid var(--primary);">
         <div class="panel-head">
-          <h3>Cấu Hình & Tham Số Hệ Thống Toàn Game</h3>
+          <div>
+            <h3>⚙️ Cấu Hình & Tham Số Vận Hành Toàn Game</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-top:3px;">
+              Mọi thay đổi dưới đây sẽ được lưu trực tiếp vào cơ sở dữ liệu và áp dụng ngay lập tức cho toàn bộ người chơi mà không cần khởi động lại máy chủ!
+            </p>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="btn-act" onclick="resetDefaultConfig()">🔄 Khôi Phục Mặc Định</button>
+            <button type="button" class="btn-primary" onclick="submitGameConfig()">💾 Lưu Cấu Hình Hệ Thống</button>
+          </div>
         </div>
-        <form onsubmit="saveGameConfig(event)" style="max-width: 600px;">
-          <div class="form-group">
-            <label>Thông Báo Chào Toàn Server (Server Banner):</label>
-            <input type="text" id="cfgAnnouncement" value="Tôi vẫn sẽ duy trì game. Game không thu phí, ai đòi chuyển khoản là lừa đảo.">
+
+        <form id="gameConfigForm" onsubmit="event.preventDefault(); submitGameConfig();">
+          <!-- SECTION 1: SERVER ANNOUNCEMENT -->
+          <div style="background:#FFF9EB;border:1.5px solid #F6C948;border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <h4 style="margin:0;color:#B45309;font-size:15px;display:flex;align-items:center;gap:8px;">
+                <span>📢</span> Thông Báo Chạy Chữ Toàn Server (Server Announcement Banner)
+              </h4>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#B45309;cursor:pointer;">
+                <input type="checkbox" id="cfgAnnouncementActive" style="width:18px;height:18px;accent-color:#B45309;">
+                BẬT HIỂN THỊ
+              </label>
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+              <label>Nội dung thông báo (hiển thị cho tất cả người chơi khi mở tiệm):</label>
+              <textarea id="cfgAnnouncementText" rows="2" placeholder="Nhập thông báo chào mừng hoặc sự kiện..."></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="margin-bottom:0;">
+                <label>Loại thông báo:</label>
+                <select id="cfgAnnouncementType">
+                  <option value="event">🎉 Sự kiện đặc biệt (Màu vàng kim)</option>
+                  <option value="promo">🎁 Khuyến mãi / Thưởng nóng (Màu xanh lá)</option>
+                  <option value="warning">⚠️ Thông báo bảo trì / Nhắc nhở (Màu đỏ cam)</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Tỷ Lệ Bắt Trộm Thành Công Khi Báo Cảnh Sát (%):</label>
-            <input type="number" id="cfgCatchRate" value="50" min="10" max="90">
+
+          <!-- SECTION 2: GAMEPLAY & ECONOMY BALANCING -->
+          <div style="background:#F8F9FA;border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+            <h4 style="margin:0 0 14px;color:var(--sidebar);font-size:15px;display:flex;align-items:center;gap:8px;">
+              <span>⏱️</span> Cân Bằng Ca Bán Hàng & Kinh Tế Quán (Gameplay Economy)
+            </h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Thời Gian Ca Bán Mỗi Ngày (Giây):</label>
+                <input type="number" id="cfgDaySec" min="60" max="600" step="5">
+                <small style="color:#888;">Mặc định: 210 giây (3.5 phút / ngày chơi)</small>
+              </div>
+              <div class="form-group">
+                <label>Tiền Vốn Khởi Nghiệp Ban Đầu (VNĐ):</label>
+                <input type="number" id="cfgStartMoney" min="100000" step="50000">
+                <small style="color:#888;">Mặc định: 400.000đ khi mở tiệm Ngày 1</small>
+              </div>
+              <div class="form-group">
+                <label>Tiền Thuê Mặt Bằng Mỗi Ngày (VNĐ):</label>
+                <input type="number" id="cfgRent" min="0" step="5000">
+                <small style="color:#888;">Mặc định: 40.000đ / ngày</small>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Tiền Điện Nước Cơ Bản Mỗi Ngày (VNĐ):</label>
+                <input type="number" id="cfgUtil" min="0" step="1000">
+                <small style="color:#888;">Mặc định: 15.000đ / ngày</small>
+              </div>
+              <div class="form-group">
+                <label>Chiết Khấu Đơn App Giao Hàng (%):</label>
+                <input type="number" id="cfgAppFee" min="0" max="50">
+                <small style="color:#888;">Mặc định: 20% phí app</small>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Chi Phí Báo Cảnh Sát (VNĐ):</label>
-            <input type="number" id="cfgPoliceFee" value="100000" step="10000">
+
+          <!-- SECTION 3: POLICE & CRIME MECHANICS -->
+          <div style="background:#F8F9FA;border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <h4 style="margin:0;color:var(--sidebar);font-size:15px;display:flex;align-items:center;gap:8px;">
+                <span>👮</span> An Ninh, Báo Cảnh Sát & Trộm Cắp (Crime & Police)
+              </h4>
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;">
+                <input type="checkbox" id="cfgTheftEnabled" style="width:18px;height:18px;accent-color:var(--primary);">
+                BẬT SỰ CỐ TRỘM CẮP & ĂN QUỴT
+              </label>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Chi Phí Báo Cảnh Sát Hỗ Trợ (VNĐ):</label>
+                <input type="number" id="cfgPoliceFee" min="10000" step="10000">
+                <small style="color:#888;">Mặc định: 100.000đ phí báo án</small>
+              </div>
+              <div class="form-group">
+                <label>Tỷ Lệ Cảnh Sát Bắt Trộm Thành Công (%):</label>
+                <input type="number" id="cfgCatchRate" min="10" max="95" step="5">
+                <small style="color:#888;">Mặc định: 50% (thành công bắt kẻ trộm & thu hồi két)</small>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Thời Gian Ca Bán Hàng Mỗi Ngày (Giây):</label>
-            <input type="number" id="cfgDaySec" value="210" min="60" max="600">
+
+          <!-- SECTION 4: TOURNAMENT & WEEKLY REWARDS -->
+          <div style="background:#F8F9FA;border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+            <h4 style="margin:0 0 14px;color:var(--sidebar);font-size:15px;display:flex;align-items:center;gap:8px;">
+              <span>🏆</span> Cơ Cấu Giải Thưởng Giải Mì Tuần (Weekly Tournament Rewards)
+            </h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Số Lượt Thi Đấu Miễn Phí Mỗi Ngày:</label>
+                <input type="number" id="cfgChalRounds" min="1" max="10">
+                <small style="color:#888;">Mặc định: 3 lượt thi đấu / ngày</small>
+              </div>
+              <div class="form-group">
+                <label>Tiền Thưởng TOP 1 - Quán Quân (VNĐ):</label>
+                <input type="number" id="cfgRewardTop1" min="100000" step="100000">
+                <small style="color:#888;">Mặc định: 1.000.000đ tiền mặt vào két</small>
+              </div>
+              <div class="form-group">
+                <label>Tiền Thưởng TOP 2 - Á Quân 1 (VNĐ):</label>
+                <input type="number" id="cfgRewardTop2" min="50000" step="50000">
+                <small style="color:#888;">Mặc định: 300.000đ tiền mặt vào két</small>
+              </div>
+              <div class="form-group">
+                <label>Tiền Thưởng TOP 3 - Á Quân 2 (VNĐ):</label>
+                <input type="number" id="cfgRewardTop3" min="20000" step="20000">
+                <small style="color:#888;">Mặc định: 100.000đ tiền mặt vào két</small>
+              </div>
+            </div>
           </div>
-          <button type="submit" class="btn-primary">💾 Lưu Cấu Hình Hệ Thống</button>
+
+          <!-- SECTION 5: TAX SYSTEM -->
+          <div style="background:#F8F9FA;border:1.5px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+            <h4 style="margin:0 0 14px;color:var(--sidebar);font-size:15px;display:flex;align-items:center;gap:8px;">
+              <span>🏛️</span> Thuế Kinh Doanh Hộ Cá Thể (Tax System)
+            </h4>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Chu Kỳ Nộp Thuế (Số Ngày / Kỳ):</label>
+                <input type="number" id="cfgTaxCycleDays" min="1" max="10">
+                <small style="color:#888;">Mặc định: 3 ngày một kỳ kê khai</small>
+              </div>
+              <div class="form-group">
+                <label>Mức Thuế Cơ Bản Kỳ Đầu (VNĐ):</label>
+                <input type="number" id="cfgTaxBaseRate" min="10000" step="5000">
+                <small style="color:#888;">Mặc định: 50.000đ</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- FORM ACTIONS -->
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding-top:10px;">
+            <div id="cfgStatusText" style="font-size:13px;color:#2E7D32;font-weight:700;"></div>
+            <div style="display:flex;gap:10px;">
+              <button type="button" class="btn-act" onclick="resetDefaultConfig()" style="padding:10px 18px;">🔄 Khôi Phục Mặc Định</button>
+              <button type="submit" class="btn-primary" style="padding:10px 22px;font-size:14px;">💾 Lưu Cấu Hình Hệ Thống</button>
+            </div>
+          </div>
         </form>
       </div>
     </div>
-
   </main>
 
+  <!-- TOAST NOTIFICATION -->
   <div id="admToast"></div>
 
+  <!-- JAVASCRIPT LOGIC -->
   <script>
+    const ADMIN_CORRECT_CODE = "09659";
+    let allUsersData = [];
+
     function showToast(msg) {
       const t = document.getElementById("admToast");
+      if (!t) return;
       t.textContent = msg;
       t.className = "show";
       setTimeout(() => t.className = "", 3000);
@@ -519,35 +923,93 @@
       if (!num && num !== 0) return "0đ";
       if (Math.abs(num) >= 1000000) return (num / 1000000).toFixed(1).replace(".", ",") + " tr";
       if (Math.abs(num) >= 1000) return (num / 1000).toFixed(0) + "k";
-      return num.toLocaleString("vi-VN") + "đ";
+      return Number(num).toLocaleString("vi-VN") + "đ";
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function getAdminAuthCode() {
+      return sessionStorage.getItem("adminAuthCode") || localStorage.getItem("adminAuthCode") || "";
+    }
+
+    function checkAdminAuth() {
+      const code = getAdminAuthCode();
+      const lockScreen = document.getElementById("adminLockScreen");
+      if (code === ADMIN_CORRECT_CODE) {
+        if (lockScreen) lockScreen.style.display = "none";
+        return true;
+      } else {
+        if (lockScreen) {
+          lockScreen.style.display = "flex";
+          const inp = document.getElementById("adminPinInput");
+          if (inp) { inp.value = ""; setTimeout(() => inp.focus(), 100); }
+        }
+        return false;
+      }
+    }
+
+    function verifyAdminPin() {
+      const inp = document.getElementById("adminPinInput");
+      const val = (inp?.value || "").trim();
+      const err = document.getElementById("pinError");
+      if (val === ADMIN_CORRECT_CODE) {
+        sessionStorage.setItem("adminAuthCode", ADMIN_CORRECT_CODE);
+        localStorage.setItem("adminAuthCode", ADMIN_CORRECT_CODE);
+        const lockScreen = document.getElementById("adminLockScreen");
+        if (lockScreen) lockScreen.style.display = "none";
+        showToast("✓ Đã xác thực mã quản trị thành công!");
+        loadAllData();
+      } else {
+        if (err) err.textContent = "❌ Mã code không chính xác! Vui lòng thử lại.";
+        if (inp) { inp.value = ""; inp.focus(); }
+      }
+    }
+
+    function lockAdmin() {
+      sessionStorage.removeItem("adminAuthCode");
+      localStorage.removeItem("adminAuthCode");
+      checkAdminAuth();
+      showToast("Đã khóa bảng quản trị.");
     }
 
     function showTab(tabId) {
       document.querySelectorAll(".tab-pane").forEach(el => el.style.display = "none");
       document.querySelectorAll(".nav-links li").forEach(el => el.classList.remove("active"));
 
-      const pane = document.getElementById("tab-" + tabId);
-      if (pane) pane.style.display = "block";
+      const targetPane = document.getElementById("tab-" + tabId);
+      if (targetPane) targetPane.style.display = "block";
 
-      const link = document.querySelector(`.nav-links a[href="#${tabId}"]`);
-      if (link && link.parentElement) link.parentElement.classList.add("active");
+      const navEl = document.querySelector(`.nav-links a[href="#${tabId}"]`);
+      if (navEl && navEl.parentElement) navEl.parentElement.classList.add("active");
 
-      const titles = {
-        overview: "Bảng Điều Khiển Tổng Quan",
-        users: "Quản Lý Người Dùng & Dữ Liệu Sử Dụng",
-        leaderboard: "Quản Lý Bảng Xếp Hạng Người Chơi",
-        challenges: "Quản Lý Thử Thách Giải Mì",
-        cloudsaves: "Quản Lý Bản Lưu Tiến Trình Đám Mây",
-        pranks: "Quản Lý Chọc Quán & Quà Tặng Xã Hội",
-        config: "Cấu Hình Tham Số Game & An Ninh"
+      const titleMap = {
+        overview: ["📊 Tổng Quan Hệ Thống", "Báo cáo thời gian thực về dữ liệu người chơi, doanh thu và hoạt động máy chủ."],
+        users: ["👥 Quản Lý Người Dùng & Bản Lưu", "Toàn bộ tài khoản và tiến trình quán được đồng bộ an toàn trên Neon Serverless Postgres."],
+        leaderboard: ["🏆 Quản Lý Bảng Xếp Hạng", "Bảng xếp hạng tổng doanh thu và đánh giá các tiệm mì toàn quốc."],
+        challenges: ["🍜 Giải Mì & Bảng Vinh Danh", "Theo dõi kết quả Giải Mì tuần và danh sách quán quân nhận thưởng tiền mặt."],
+        cloudsaves: ["💾 Bản Lưu Đám Mây", "Danh sách các mã đồng bộ dữ liệu đám mây của người chơi."],
+        pranks: ["💌 Chọc Quán & Quà Tặng", "Nhật ký tương tác xã hội giữa các tiệm mì."],
+        config: ["⚙️ Cấu Hình & Tham Số Game", "Tùy chỉnh thông báo, thời gian ca bán, kinh tế và giải thưởng toàn server."]
       };
-      document.getElementById("viewTitle").textContent = titles[tabId] || "Quản Trị Hệ Thống";
+
+      if (titleMap[tabId]) {
+        document.getElementById("pageTitle").textContent = titleMap[tabId][0];
+        document.getElementById("pageSub").textContent = titleMap[tabId][1];
+      }
+
+      if (tabId === "config") {
+        loadGameConfig();
+      }
     }
 
+    // --- USERS MANAGEMENT ---
     function renderUsersTable(users) {
       const tbody = document.getElementById("usersBody");
       if (!tbody) return;
-      if (!users.length) {
+      if (!users || !users.length) {
         tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;">Chưa có tài khoản người dùng nào.</td></tr>';
         return;
       }
@@ -565,71 +1027,47 @@
               <button class="btn-act" style="padding:2px 8px;font-size:11px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;" onclick="assignUserCode('${escapeHtml(u.username)}')">+ Cấp mã</button>
             `}
           </td>
-          <td><span class="badge badge-lv">Cấp ${u.lv}</span></td>
-          <td>Ngày ${u.day}</td>
+          <td><span class="badge badge-lv">Cấp ${u.lv || 1}</span></td>
+          <td>Ngày ${u.day || 1}</td>
           <td style="font-weight:700; color:#3E9B4F;">${formatMoney(u.money)}</td>
           <td><small>${u.last_login_at ? new Date(u.last_login_at * 1000).toLocaleString("vi-VN") : "Chưa có"}</small></td>
-          <td><b>${u.login_count}</b> lần</td>
-          <td><small style="color:var(--text-muted);">${escapeHtml(u.device_info)}</small></td>
+          <td><b>${u.login_count || 1}</b> lần</td>
+          <td><small style="color:var(--text-muted);">${escapeHtml(u.device_info || "Desktop")}</small></td>
           <td>${u.has_save ? '<span style="color:#2E7D32; font-weight:700;">✓ Có bản lưu</span>' : '<span style="color:#888;">Chưa lưu</span>'}</td>
           <td>
-            ${u.has_save ? `<button class="btn-act btn-edit" onclick="viewUserSave('${escapeHtml(u.username)}')">Xem Lưu</button>` : ''}
-            <button class="btn-act btn-edit" onclick="resetUserPassword('${escapeHtml(u.username)}')">Đổi MK</button>
-            <button class="btn-act btn-del" onclick="deleteUser('${escapeHtml(u.username)}')">Xóa</button>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              ${u.has_save ? `<button class="btn-act btn-edit" onclick="viewUserSave('${escapeHtml(u.username)}')">👁️ Save</button>` : ''}
+              ${u.store_code ? `<button class="btn-act" style="background:#E8F5E9;color:#2E7D32;" onclick="adminReceiveStoreToTest('${escapeHtml(u.store_code)}')">🎮 Test</button>` : ''}
+              <button class="btn-act" onclick="resetUserPassword('${escapeHtml(u.username)}')">🔑 Pass</button>
+              <button class="btn-act btn-del" onclick="deleteUser('${escapeHtml(u.username)}')">🗑️</button>
+            </div>
           </td>
         </tr>
       `).join("");
     }
 
     function filterUsersTable() {
-      const query = (document.getElementById("userSearchInput")?.value || "").toLowerCase().trim();
-      if (!window.rawUsersList) return;
-      const filtered = window.rawUsersList.filter(u => u.username.toLowerCase().includes(query));
+      const q = (document.getElementById("userSearchInput")?.value || "").toLowerCase().trim();
+      const lvF = document.getElementById("userLevelFilter")?.value || "all";
+
+      let filtered = allUsersData.filter(u => {
+        const matchQ = u.username.toLowerCase().includes(q) ||
+                       (u.store_code || '').toLowerCase().includes(q) ||
+                       String(u.id).includes(q);
+        if (!matchQ) return false;
+
+        const lv = u.lv || 1;
+        if (lvF === "1-10") return lv >= 1 && lv <= 10;
+        if (lvF === "11-20") return lv >= 11 && lv <= 20;
+        if (lvF === "21-35") return lv >= 21 && lv <= 35;
+        if (lvF === "36-50") return lv >= 36 && lv <= 50;
+        return true;
+      });
+
       renderUsersTable(filtered);
     }
 
-    async function deleteUser(username) {
-      if (!confirm("Bạn có chắc chắn muốn xóa tài khoản " + username + " và toàn bộ dữ liệu quán của họ?")) return;
-      try {
-        const res = await fetch("/api/admin/user/delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
-          body: JSON.stringify({ username })
-        });
-        if (res.ok) {
-          showToast("Đã xóa tài khoản " + username + " thành công!");
-          loadAllData();
-        }
-      } catch (e) {
-        showToast("Lỗi khi xóa người dùng!");
-      }
-    }
-
-    async function resetUserPassword(username) {
-      const newPwd = prompt("Nhập mật khẩu mới cho tài khoản " + username + " (tối thiểu 6 ký tự):");
-      if (!newPwd) return;
-      if (newPwd.length < 6) {
-        alert("Mật khẩu phải từ 6 ký tự trở lên!");
-        return;
-      }
-      try {
-        const res = await fetch("/api/admin/user/reset-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
-          body: JSON.stringify({ username, newPassword: newPwd })
-        });
-        if (res.ok) {
-          showToast("Đã đặt lại mật khẩu cho " + username + " thành công!");
-        } else {
-          const err = await res.json();
-          alert(err.error || "Lỗi đổi mật khẩu");
-        }
-      } catch (e) {
-        showToast("Lỗi kết nối máy chủ!");
-      }
-    }
-
-    async function copyStoreCode(code) {
+    function copyStoreCode(code) {
       navigator.clipboard.writeText(code).then(() => {
         showToast("✓ Đã sao chép mã cửa hàng: " + code);
       }).catch(() => {
@@ -656,9 +1094,6 @@
       }
     }
 
-    let currentLookupSave = null;
-    let currentLookupCode = "";
-
     async function lookupStoreCode() {
       const inp = document.getElementById("lookupCodeInput");
       const box = document.getElementById("lookupResultBox");
@@ -677,13 +1112,8 @@
         const d = await res.json();
         if (!d.ok) {
           box.innerHTML = `<div style="color:#C62828;font-weight:700;">❌ ${escapeHtml(d.error || "Không tìm thấy tiệm!")}</div>`;
-          currentLookupSave = null;
-          currentLookupCode = "";
           return;
         }
-
-        currentLookupSave = d.save;
-        currentLookupCode = d.code;
 
         let userHtml = d.user ? `<b style="color:var(--primary);">${escapeHtml(d.user.username)}</b> (Cấp ${d.user.current_lv}, Ngày ${d.user.current_day}, Két ${formatMoney(d.user.current_money)})` : '<i>Chưa liên kết tài khoản (Khách vãng lai / Chuyển máy)</i>';
 
@@ -733,9 +1163,9 @@
         if (res.ok) {
           const data = await res.json();
           if (data.save) {
-            alert("Bản lưu của " + username + ":\\n\\n" + data.save.slice(0, 300) + "...\\n\\n(Dữ liệu mã hóa đám mây)");
+            alert("Bản lưu đám mây của " + username + ":\\n\\n" + data.save.slice(0, 350) + "...\\n\\n(Định dạng chuỗi mã hóa an toàn)");
           } else {
-            alert("Tài khoản chưa có bản lưu trên cloud.");
+            alert("Tài khoản chưa có dữ liệu lưu trữ đám mây.");
           }
         }
       } catch (e) {
@@ -743,10 +1173,294 @@
       }
     }
 
-    
+    async function resetUserPassword(username) {
+      const newPwd = prompt("Nhập mật khẩu mới cho tài khoản " + username + " (tối thiểu 6 ký tự):");
+      if (!newPwd) return;
+      if (newPwd.length < 6) {
+        alert("Mật khẩu phải từ 6 ký tự trở lên!");
+        return;
+      }
+      try {
+        const res = await fetch("/api/admin/user/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
+          body: JSON.stringify({ username, newPassword: newPwd })
+        });
+        if (res.ok) {
+          showToast("✓ Đã đặt lại mật khẩu cho " + username + " thành công!");
+        } else {
+          const err = await res.json();
+          alert(err.error || "Lỗi đổi mật khẩu");
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    async function deleteUser(username) {
+      if (!confirm("CẢNH BÁO: Bạn có chắc chắn muốn xóa tài khoản '" + username + "'? Thao tác này sẽ xóa toàn bộ dữ liệu tiệm của người này!")) return;
+      try {
+        const res = await fetch("/api/admin/user/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
+          body: JSON.stringify({ username })
+        });
+        if (res.ok) {
+          showToast("✓ Đã xóa tài khoản " + username);
+          loadAllData();
+        } else {
+          alert("Lỗi khi xóa tài khoản.");
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    // --- LEADERBOARD MANAGEMENT ---
+    async function editPlayer(id, curName, curProfit, curLv) {
+      const name = prompt("Nhập tên quán mới:", curName);
+      if (name === null) return;
+      const profitStr = prompt("Nhập tổng lãi mới (VNĐ):", curProfit);
+      if (profitStr === null) return;
+      const lvStr = prompt("Nhập cấp bậc mới (1-50):", curLv);
+      if (lvStr === null) return;
+
+      try {
+        const res = await fetch("/api/lb", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
+          body: JSON.stringify({
+            id,
+            name,
+            profit: parseInt(profitStr, 10) || 0,
+            lv: parseInt(lvStr, 10) || 1,
+            day: 10,
+            served: 100,
+            rate: 5.0
+          })
+        });
+        if (res.ok) {
+          showToast("✓ Đã cập nhật quán " + name);
+          loadAllData();
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    async function deletePlayer(id) {
+      if (!confirm("Bạn có chắc chắn muốn xóa quán '" + id + "' khỏi bảng xếp hạng?")) return;
+      try {
+        const res = await fetch("/api/admin/player/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
+          body: JSON.stringify({ id })
+        });
+        if (res.ok) {
+          showToast("✓ Đã xóa quán khỏi bảng xếp hạng.");
+          loadAllData();
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    async function openAddPlayerModal() {
+      const name = prompt("Nhập tên quán mì mới:");
+      if (!name) return;
+      const profitStr = prompt("Nhập tổng doanh thu (VNĐ):", "1000000");
+      if (!profitStr) return;
+      const lvStr = prompt("Nhập cấp quán (1-50):", "5");
+      if (!lvStr) return;
+
+      const newId = "shop_" + Math.random().toString(36).substring(2, 9);
+      try {
+        const res = await fetch("/api/lb", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
+          body: JSON.stringify({
+            id: newId,
+            name: name.trim(),
+            profit: parseInt(profitStr, 10) || 0,
+            lv: parseInt(lvStr, 10) || 1,
+            day: 5,
+            served: 50,
+            rate: 5.0
+          })
+        });
+        if (res.ok) {
+          showToast("✓ Đã thêm quán mới lên bảng xếp hạng!");
+          loadAllData();
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    // --- CLOUD SAVES ---
+    async function deleteCloudSave(code) {
+      if (!confirm("Xóa bản lưu mã '" + code + "'?")) return;
+      try {
+        const res = await fetch("/api/admin/save/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
+          body: JSON.stringify({ code })
+        });
+        if (res.ok) {
+          showToast("✓ Đã xóa bản lưu.");
+          loadAllData();
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    // --- GAME CONFIGURATION (REWORKED & FULLY FUNCTIONAL) ---
+    const DEFAULT_CONFIG_VALUES = {
+      announcement_active: false,
+      announcement_text: "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 1.000.000đ tiền mặt vào két quán!",
+      announcement_type: "event",
+      daySec: 210,
+      startMoney: 400000,
+      rent: 40000,
+      util: 15000,
+      appFee: 20,
+      policeFee: 100000,
+      catchRate: 50,
+      theftEnabled: true,
+      chalRounds: 3,
+      rewardTop1: 1000000,
+      rewardTop2: 300000,
+      rewardTop3: 100000,
+      taxCycleDays: 3,
+      taxBaseRate: 50000
+    };
+
+    async function loadGameConfig() {
+      try {
+        const res = await fetch("/api/admin/config", {
+          headers: { "X-Admin-Code": getAdminAuthCode() || "09659" }
+        });
+        let cfg = DEFAULT_CONFIG_VALUES;
+        let lastUpdated = 0;
+        if (res.ok) {
+          const data = await res.json();
+          cfg = Object.assign({}, DEFAULT_CONFIG_VALUES, data.config || data);
+          lastUpdated = data.updated_at || 0;
+        }
+
+        // Populate Form
+        document.getElementById("cfgAnnouncementActive").checked = Boolean(cfg.announcement_active);
+        document.getElementById("cfgAnnouncementText").value = cfg.announcement_text || "";
+        document.getElementById("cfgAnnouncementType").value = cfg.announcement_type || "event";
+
+        document.getElementById("cfgDaySec").value = cfg.daySec || 210;
+        document.getElementById("cfgStartMoney").value = cfg.startMoney || 400000;
+        document.getElementById("cfgRent").value = cfg.rent || 40000;
+        document.getElementById("cfgUtil").value = cfg.util || 15000;
+        document.getElementById("cfgAppFee").value = cfg.appFee || 20;
+
+        document.getElementById("cfgPoliceFee").value = cfg.policeFee || 100000;
+        document.getElementById("cfgCatchRate").value = cfg.catchRate != null ? cfg.catchRate : 50;
+        document.getElementById("cfgTheftEnabled").checked = cfg.theftEnabled !== false;
+
+        document.getElementById("cfgChalRounds").value = cfg.chalRounds || 3;
+        document.getElementById("cfgRewardTop1").value = cfg.rewardTop1 || 1000000;
+        document.getElementById("cfgRewardTop2").value = cfg.rewardTop2 || 300000;
+        document.getElementById("cfgRewardTop3").value = cfg.rewardTop3 || 100000;
+
+        document.getElementById("cfgTaxCycleDays").value = cfg.taxCycleDays || 3;
+        document.getElementById("cfgTaxBaseRate").value = cfg.taxBaseRate || 50000;
+
+        const statusEl = document.getElementById("cfgStatusText");
+        if (statusEl) {
+          statusEl.textContent = lastUpdated ? ("✓ Cập nhật gần nhất: " + new Date(lastUpdated * 1000).toLocaleString("vi-VN")) : "✓ Đang áp dụng cấu hình tiêu chuẩn";
+        }
+      } catch (e) {
+        showToast("Lỗi tải cấu hình máy chủ!");
+      }
+    }
+
+    async function submitGameConfig() {
+      const config = {
+        announcement_active: document.getElementById("cfgAnnouncementActive").checked,
+        announcement_text: document.getElementById("cfgAnnouncementText").value.trim(),
+        announcement_type: document.getElementById("cfgAnnouncementType").value,
+
+        daySec: parseInt(document.getElementById("cfgDaySec").value, 10) || 210,
+        startMoney: parseInt(document.getElementById("cfgStartMoney").value, 10) || 400000,
+        rent: parseInt(document.getElementById("cfgRent").value, 10) || 40000,
+        util: parseInt(document.getElementById("cfgUtil").value, 10) || 15000,
+        appFee: parseInt(document.getElementById("cfgAppFee").value, 10) || 20,
+
+        policeFee: parseInt(document.getElementById("cfgPoliceFee").value, 10) || 100000,
+        catchRate: parseInt(document.getElementById("cfgCatchRate").value, 10) || 50,
+        theftEnabled: document.getElementById("cfgTheftEnabled").checked,
+
+        chalRounds: parseInt(document.getElementById("cfgChalRounds").value, 10) || 3,
+        rewardTop1: parseInt(document.getElementById("cfgRewardTop1").value, 10) || 1000000,
+        rewardTop2: parseInt(document.getElementById("cfgRewardTop2").value, 10) || 300000,
+        rewardTop3: parseInt(document.getElementById("cfgRewardTop3").value, 10) || 100000,
+
+        taxCycleDays: parseInt(document.getElementById("cfgTaxCycleDays").value, 10) || 3,
+        taxBaseRate: parseInt(document.getElementById("cfgTaxBaseRate").value, 10) || 50000
+      };
+
+      try {
+        const res = await fetch("/api/admin/config", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Code": getAdminAuthCode() || "09659"
+          },
+          body: JSON.stringify(config)
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast("✓ Đã lưu cấu hình game lên máy chủ thành công!");
+          const statusEl = document.getElementById("cfgStatusText");
+          if (statusEl) {
+            statusEl.textContent = "✓ Đã lưu và áp dụng lúc: " + new Date().toLocaleTimeString("vi-VN");
+          }
+        } else {
+          alert("Lỗi khi lưu cấu hình: " + (data.error || "Không xác định"));
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    function resetDefaultConfig() {
+      if (!confirm("Bạn có muốn đặt lại toàn bộ tham số cấu hình về giá trị mặc định của game?")) return;
+      document.getElementById("cfgAnnouncementActive").checked = DEFAULT_CONFIG_VALUES.announcement_active;
+      document.getElementById("cfgAnnouncementText").value = DEFAULT_CONFIG_VALUES.announcement_text;
+      document.getElementById("cfgAnnouncementType").value = DEFAULT_CONFIG_VALUES.announcement_type;
+
+      document.getElementById("cfgDaySec").value = DEFAULT_CONFIG_VALUES.daySec;
+      document.getElementById("cfgStartMoney").value = DEFAULT_CONFIG_VALUES.startMoney;
+      document.getElementById("cfgRent").value = DEFAULT_CONFIG_VALUES.rent;
+      document.getElementById("cfgUtil").value = DEFAULT_CONFIG_VALUES.util;
+      document.getElementById("cfgAppFee").value = DEFAULT_CONFIG_VALUES.appFee;
+
+      document.getElementById("cfgPoliceFee").value = DEFAULT_CONFIG_VALUES.policeFee;
+      document.getElementById("cfgCatchRate").value = DEFAULT_CONFIG_VALUES.catchRate;
+      document.getElementById("cfgTheftEnabled").checked = DEFAULT_CONFIG_VALUES.theftEnabled;
+
+      document.getElementById("cfgChalRounds").value = DEFAULT_CONFIG_VALUES.chalRounds;
+      document.getElementById("cfgRewardTop1").value = DEFAULT_CONFIG_VALUES.rewardTop1;
+      document.getElementById("cfgRewardTop2").value = DEFAULT_CONFIG_VALUES.rewardTop2;
+      document.getElementById("cfgRewardTop3").value = DEFAULT_CONFIG_VALUES.rewardTop3;
+
+      document.getElementById("cfgTaxCycleDays").value = DEFAULT_CONFIG_VALUES.taxCycleDays;
+      document.getElementById("cfgTaxBaseRate").value = DEFAULT_CONFIG_VALUES.taxBaseRate;
+
+      showToast("Đã khôi phục các giá trị mặc định. Bấm 'Lưu Cấu Hình' để cập nhật lên Server!");
+    }
+
+    // --- MASTER DATA LOADER ---
     async function loadAllData() {
       try {
-        // Load Leaderboard
+        // 1. Load Leaderboard
         const resLb = await fetch("/api/lb");
         const dataLb = await resLb.json();
 
@@ -762,44 +1476,71 @@
         document.getElementById("metricTotalShops").textContent = (dataLb.total || top.length);
         document.getElementById("metricTotalServed").textContent = totalServed.toLocaleString("vi-VN");
         document.getElementById("metricTotalProfit").textContent = formatMoney(totalProfit);
+        const sideShopEl = document.getElementById("sideShopCount");
+        if (sideShopEl) sideShopEl.textContent = top.length;
 
-        // Render Top table
-        const topTbody = document.getElementById("topLeaderboardBody");
-        topTbody.innerHTML = top.slice(0, 5).map((s, idx) => `
-          <tr>
-            <td><span class="badge badge-rank">#${idx + 1}</span></td>
-            <td><b>${escapeHtml(s.name)}</b><br><small style="color:#888">${s.id}</small></td>
-            <td><span class="badge badge-lv">Cấp ${s.lv}</span></td>
-            <td>Ngày ${s.day}</td>
-            <td>${s.served} tô</td>
-            <td>⭐ ${s.rate || 5.0}</td>
-            <td style="color:${s.profit >= 0 ? '#3E9B4F' : '#C23328'}; font-weight:700;">${formatMoney(s.profit)}</td>
-            <td>
-              <button class="btn-act btn-edit" onclick="editPlayer('${s.id}', '${escapeHtml(s.name)}', ${s.profit}, ${s.lv})">Sửa</button>
-              <button class="btn-act btn-del" onclick="deletePlayer('${s.id}')">Xóa</button>
-            </td>
-          </tr>
-        `).join("");
+        // Render Overview Top 5
+        const ovTopBody = document.getElementById("overviewTopShopsBody");
+        if (ovTopBody) {
+          ovTopBody.innerHTML = top.slice(0, 5).map((s, idx) => `
+            <tr>
+              <td><span class="badge badge-rank">#${idx + 1}</span></td>
+              <td><b>${escapeHtml(s.name)}</b></td>
+              <td>Cấp ${s.lv}</td>
+              <td style="color:#2E7D32;font-weight:700;">${formatMoney(s.profit)}</td>
+            </tr>
+          `).join("");
+        }
 
-        // Render Full table
+        // Render Full Leaderboard table
         const fullTbody = document.getElementById("fullLeaderboardBody");
-        fullTbody.innerHTML = top.map((s, idx) => `
-          <tr>
-            <td><code>${s.id}</code></td>
-            <td><b>${escapeHtml(s.name)}</b></td>
-            <td>Cấp ${s.lv}</td>
-            <td>Ngày ${s.day}</td>
-            <td>${s.served} tô</td>
-            <td>⭐ ${s.rate || 5.0}</td>
-            <td style="font-weight:700; color:${s.profit >= 0 ? '#3E9B4F' : '#C23328'}">${formatMoney(s.profit)}</td>
-            <td>
-              <button class="btn-act btn-edit" onclick="editPlayer('${s.id}', '${escapeHtml(s.name)}', ${s.profit}, ${s.lv})">Sửa</button>
-              <button class="btn-act btn-del" onclick="deletePlayer('${s.id}')">Xóa</button>
-            </td>
-          </tr>
-        `).join("");
+        if (fullTbody) {
+          fullTbody.innerHTML = top.map((s, idx) => `
+            <tr>
+              <td><code>${s.id}</code></td>
+              <td><b>${escapeHtml(s.name)}</b></td>
+              <td><span class="badge badge-lv">Cấp ${s.lv}</span></td>
+              <td>Ngày ${s.day}</td>
+              <td>${s.served} tô</td>
+              <td>⭐ ${s.rate || 5.0}</td>
+              <td style="font-weight:700; color:${s.profit >= 0 ? '#3E9B4F' : '#C23328'}">${formatMoney(s.profit)}</td>
+              <td>
+                <button class="btn-act btn-edit" onclick="editPlayer('${s.id}', '${escapeHtml(s.name)}', ${s.profit}, ${s.lv})">Sửa</button>
+                <button class="btn-act btn-del" onclick="deletePlayer('${s.id}')">Xóa</button>
+              </td>
+            </tr>
+          `).join("");
+        }
 
-        // Load Challenges
+        // 2. Load Registered Users List (GIỮ NGUYÊN 100% DATA USER)
+        try {
+          const resUsers = await fetch("/api/admin/users", {
+            headers: { "X-Admin-Code": getAdminAuthCode() || "09659" }
+          });
+          if (resUsers.ok) {
+            const dataU = await resUsers.json();
+            allUsersData = dataU.users || [];
+            document.getElementById("metricTotalUsers").textContent = dataU.total || allUsersData.length;
+            const sideUserEl = document.getElementById("sideUserCount");
+            if (sideUserEl) sideUserEl.textContent = allUsersData.length;
+            renderUsersTable(allUsersData);
+
+            // Render Overview Recent 5 users
+            const ovRecentBody = document.getElementById("overviewRecentUsersBody");
+            if (ovRecentBody) {
+              ovRecentBody.innerHTML = allUsersData.slice(0, 5).map(u => `
+                <tr>
+                  <td><b style="color:var(--primary);">${escapeHtml(u.username)}</b></td>
+                  <td>Cấp ${u.lv || 1}</td>
+                  <td style="color:#2E7D32;font-weight:700;">${formatMoney(u.money)}</td>
+                  <td><small>${u.last_login_at ? new Date(u.last_login_at * 1000).toLocaleTimeString("vi-VN") + " " + new Date(u.last_login_at * 1000).toLocaleDateString("vi-VN") : "Mới tạo"}</small></td>
+                </tr>
+              `).join("");
+            }
+          }
+        } catch (e) {}
+
+        // 3. Load Challenges & Hall of Fame
         const resChal = await fetch("/api/chal");
         const dataChal = await resChal.json();
         const chalList = dataChal.top || dataChal.j?.top || [];
@@ -864,223 +1605,80 @@
           }).join("") : '<tr><td colspan="6" style="text-align:center;">Tuần này chưa có lượt thi nào.</td></tr>';
         }
 
-        // Load Registered Users List
-        try {
-          const resUsers = await fetch("/api/admin/users", { headers: { "X-Admin-Code": getAdminAuthCode() || "09659" } });
-          if (resUsers.ok) {
-            const dataU = await resUsers.json();
-            window.rawUsersList = dataU.users || [];
-            document.getElementById("metricTotalUsers").textContent = dataU.total || window.rawUsersList.length;
-            renderUsersTable(window.rawUsersList);
-          }
-        } catch (e) {
-          console.error("Lỗi nạp users:", e);
+        // Today challenges list
+        const chalTbody = document.getElementById("challengesBody");
+        if (chalTbody) {
+          chalTbody.innerHTML = chalList.length ? chalList.map(c => `
+            <tr>
+              <td>${chalDay}</td>
+              <td><b>${escapeHtml(c.name)}</b> (<code>${c.id}</code>)</td>
+              <td style="font-weight:700; color:var(--primary)">${c.s} điểm</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>Hôm nay</td>
+            </tr>
+          `).join("") : '<tr><td colspan="8" style="text-align:center;">Chưa có lượt thi nào hôm nay.</td></tr>';
         }
 
-        const chalTbody = document.getElementById("challengesBody");
-        chalTbody.innerHTML = chalList.length ? chalList.map(c => `
-          <tr>
-            <td>${chalDay}</td>
-            <td><b>${escapeHtml(c.name)}</b> (<code>${c.id}</code>)</td>
-            <td style="font-weight:700; color:var(--primary)">${c.s} điểm</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-            <td>-</td>
-            <td>Hôm nay</td>
-          </tr>
-        `).join("") : '<tr><td colspan="8" style="text-align:center;">Chưa có lượt thi nào hôm nay.</td></tr>';
-
-        // Load Admin Cloud Saves
-        const resAdmin = await fetch("/api/admin/overview", { headers: { "X-Admin-Code": getAdminAuthCode() || "09659" } });
+        // 4. Load Admin Cloud Saves & Pranks
+        const resAdmin = await fetch("/api/admin/overview", {
+          headers: { "X-Admin-Code": getAdminAuthCode() || "09659" }
+        });
         if (resAdmin.ok) {
           const admData = await resAdmin.json();
           document.getElementById("metricSaves").textContent = admData.savesCount || 0;
 
           // Render Saves
           const savesTbody = document.getElementById("cloudSavesBody");
-          savesTbody.innerHTML = (admData.saves || []).length ? admData.saves.map(sv => `
-            <tr>
-              <td><b style="font-family:monospace; font-size:15px; color:var(--primary);">${sv.code}</b></td>
-              <td>${new Date(sv.created_at * 1000).toLocaleString("vi-VN")}</td>
-              <td>Còn ${Math.max(0, Math.round((86400 - (Date.now()/1000 - sv.created_at)) / 3600))} giờ</td>
-              <td>${(sv.size / 1024).toFixed(1)} KB</td>
-              <td>
-                <button class="btn-act btn-del" onclick="deleteCloudSave('${sv.code}')">Xóa</button>
-              </td>
-            </tr>
-          `).join("") : '<tr><td colspan="5" style="text-align:center;">Chưa có mã lưu đám mây nào.</td></tr>';
+          if (savesTbody) {
+            savesTbody.innerHTML = (admData.saves || []).length ? admData.saves.map(sv => `
+              <tr>
+                <td><b style="font-family:monospace; font-size:15px; color:var(--primary);">${sv.code}</b></td>
+                <td>${new Date(sv.created_at * 1000).toLocaleString("vi-VN")}</td>
+                <td>Vĩnh viễn (Đã kích hoạt)</td>
+                <td>${(sv.size / 1024).toFixed(1)} KB</td>
+                <td>
+                  <button class="btn-act btn-del" onclick="deleteCloudSave('${sv.code}')">Xóa</button>
+                </td>
+              </tr>
+            `).join("") : '<tr><td colspan="5" style="text-align:center;">Chưa có bản lưu nào.</td></tr>';
+          }
 
           // Render Pranks
           const pranksTbody = document.getElementById("pranksBody");
-          pranksTbody.innerHTML = (admData.pranks || []).length ? admData.pranks.map(pr => `
-            <tr>
-              <td><b>${escapeHtml(pr.from_name)}</b></td>
-              <td><b>${escapeHtml(pr.to_name)}</b></td>
-              <td>${pr.kind}</td>
-              <td>${pr.taken ? '<span style="color:var(--success)">✓ Đã nhận</span>' : '<span style="color:#E65100">Đang chờ</span>'}</td>
-              <td>${new Date(pr.created_at * 1000).toLocaleString("vi-VN")}</td>
-            </tr>
-          `).join("") : '<tr><td colspan="5" style="text-align:center;">Chưa có lượt chọc phá nào.</td></tr>';
+          if (pranksTbody) {
+            pranksTbody.innerHTML = (admData.pranks || []).length ? admData.pranks.map(pr => `
+              <tr>
+                <td><b>${escapeHtml(pr.from_name)}</b></td>
+                <td>${escapeHtml(pr.to_name)}</td>
+                <td><span class="badge" style="background:#FFF3D6; color:#D97706">${pr.kind}</span></td>
+                <td>${new Date(pr.created_at * 1000).toLocaleTimeString("vi-VN")}</td>
+                <td>${pr.taken ? '<span style="color:#2E7D32">Đã nhận</span>' : '<span style="color:#888">Chưa nhận</span>'}</td>
+              </tr>
+            `).join("") : '<tr><td colspan="5" style="text-align:center;">Chưa có tương tác nào.</td></tr>';
+          }
         }
-
-      } catch (e) {
-        console.error("Lỗi nạp dữ liệu:", e);
-        showToast("Lỗi khi kết nối backend server!");
+      } catch (err) {
+        console.error("Lỗi tải dữ liệu admin:", err);
       }
     }
 
-    function escapeHtml(str) {
-      if (!str) return "";
-      return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m]);
-    }
-
-    async function deletePlayer(id) {
-      if (!confirm("Bạn có chắc chắn muốn xóa quán " + id + " khỏi bảng xếp hạng?")) return;
-      try {
-        const res = await fetch("/api/admin/player/delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
-          body: JSON.stringify({ id })
-        });
-        if (res.ok) {
-          showToast("Đã xóa quán thành công!");
-          loadAllData();
-        }
-      } catch (e) {
-        showToast("Lỗi khi xóa quán!");
-      }
-    }
-
-    async function editPlayer(id, curName, curProfit, curLv) {
-      const name = prompt("Nhập tên quán mới:", curName);
-      if (name === null) return;
-      const profitStr = prompt("Nhập tổng lãi mới (VNĐ):", curProfit);
-      if (profitStr === null) return;
-      const lvStr = prompt("Nhập cấp bậc mới (1-10):", curLv);
-      if (lvStr === null) return;
-
-      try {
-        const res = await fetch("/api/lb", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
-          body: JSON.stringify({
-            id,
-            name,
-            profit: parseInt(profitStr, 10) || 0,
-            lv: parseInt(lvStr, 10) || 1,
-            day: 10,
-            served: 100,
-            rate: 5.0
-          })
-        });
-        if (res.ok) {
-          showToast("Đã cập nhật thông tin quán!");
-          loadAllData();
-        }
-      } catch (e) {
-        showToast("Lỗi khi sửa quán!");
-      }
-    }
-
-    async function openAddPlayerModal() {
-      const name = prompt("Nhập tên quán muốn tạo:", "Mì Cay Phố");
-      if (!name) return;
-      const profit = parseInt(prompt("Nhập tổng lãi (VNĐ):", "5000000"), 10) || 0;
-      const lv = parseInt(prompt("Cấp độ quán (1-10):", "5"), 10) || 1;
-      const id = "shop_" + Math.random().toString(36).slice(2, 8);
-
-      try {
-        const res = await fetch("/api/lb", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
-          body: JSON.stringify({ id, name, profit, lv, day: 5, served: 50, rate: 4.8 })
-        });
-        if (res.ok) {
-          showToast("Đã thêm quán mới lên bảng xếp hạng!");
-          loadAllData();
-        }
-      } catch (e) {
-        showToast("Lỗi khi thêm quán!");
-      }
-    }
-
-    async function deleteCloudSave(code) {
-      if (!confirm("Xóa mã đồng bộ " + code + "?")) return;
-      try {
-        const res = await fetch("/api/admin/save/delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Admin-Code": getAdminAuthCode() || "09659" },
-          body: JSON.stringify({ code })
-        });
-        if (res.ok) {
-          showToast("Đã xóa mã đồng bộ!");
-          loadAllData();
-        }
-      } catch (e) {
-        showToast("Lỗi khi xóa mã lưu!");
-      }
-    }
-
-    function saveGameConfig(e) {
-      e.preventDefault();
-      showToast("Đã lưu cấu hình tham số game!");
-    }
-
-    // Auto-load on open
-    
-    const ADMIN_CORRECT_CODE = "09659";
-
-    function getAdminAuthCode() {
-      return sessionStorage.getItem("adminAuthCode") || localStorage.getItem("adminAuthCode") || "";
-    }
-
-    function checkAdminAuth() {
-      const code = getAdminAuthCode();
-      const lockScreen = document.getElementById("adminLockScreen");
-      if (code === ADMIN_CORRECT_CODE) {
-        if (lockScreen) lockScreen.style.display = "none";
-        return true;
-      } else {
-        if (lockScreen) {
-          lockScreen.style.display = "flex";
-          const inp = document.getElementById("adminPinInput");
-          if (inp) { inp.value = ""; setTimeout(() => inp.focus(), 100); }
-        }
-        return false;
-      }
-    }
-
-    function verifyAdminPin() {
-      const inp = document.getElementById("adminPinInput");
-      const val = (inp?.value || "").trim();
-      const err = document.getElementById("pinError");
-      if (val === ADMIN_CORRECT_CODE) {
-        sessionStorage.setItem("adminAuthCode", ADMIN_CORRECT_CODE);
-        localStorage.setItem("adminAuthCode", ADMIN_CORRECT_CODE);
-        const lockScreen = document.getElementById("adminLockScreen");
-        if (lockScreen) lockScreen.style.display = "none";
-        showToast("✓ Đã xác thực mã quản trị thành công!");
-        loadAllData();
-      } else {
-        if (err) err.textContent = "❌ Mã code không chính xác! Vui lòng thử lại.";
-        if (inp) { inp.value = ""; inp.focus(); }
-      }
-    }
-
-    function lockAdmin() {
-      sessionStorage.removeItem("adminAuthCode");
-      localStorage.removeItem("adminAuthCode");
-      checkAdminAuth();
-      showToast("Đã khóa bảng quản trị.");
-    }
-
+    // Auto-init
     if (document.readyState === "loading") {
-      window.addEventListener("DOMContentLoaded", () => { if (checkAdminAuth()) loadAllData(); });
+      window.addEventListener("DOMContentLoaded", () => {
+        if (checkAdminAuth()) {
+          loadAllData();
+          loadGameConfig();
+        }
+      });
     } else {
-      if (checkAdminAuth()) loadAllData();
+      if (checkAdminAuth()) {
+        loadAllData();
+        loadGameConfig();
+      }
     }
-
   </script>
 </body>
 </html>

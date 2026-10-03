@@ -134,6 +134,13 @@ def init_db():
             )
         """)
         db.execute("""
+            CREATE TABLE IF NOT EXISTS game_config (
+                key TEXT PRIMARY KEY,
+                value TEXT,
+                updated_at BIGINT
+            )
+        """)
+        db.execute("""
             CREATE TABLE IF NOT EXISTS weekly_hall_of_fame (
                 id TEXT PRIMARY KEY,
                 week_key TEXT,
@@ -246,6 +253,26 @@ def get_week_bounds(target_date=None):
     week_title = f"Tuần {iso_week} ({m_str} - {s_str})"
     return start_sec, end_sec, week_key, week_title
 
+DEFAULT_GAME_CONFIG = {
+    "announcement_active": False,
+    "announcement_text": "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 1.000.000đ tiền mặt vào két quán!",
+    "announcement_type": "event",
+    "daySec": 210,
+    "startMoney": 400000,
+    "rent": 40000,
+    "util": 15000,
+    "appFee": 20,
+    "policeFee": 100000,
+    "catchRate": 50,
+    "theftEnabled": True,
+    "chalRounds": 3,
+    "rewardTop1": 1000000,
+    "rewardTop2": 300000,
+    "rewardTop3": 100000,
+    "taxCycleDays": 3,
+    "taxBaseRate": 50000
+}
+
 def get_today_chal_date():
     now = datetime.now()
     return f"{now.day}/{now.month}"
@@ -346,6 +373,25 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"403 Forbidden: Access to sensitive files is prohibited.")
             return
+
+        if path == "/api/config" or path == "/api/admin/config":
+            conn = DB()
+            cur = conn
+            cur.execute("SELECT key, value, updated_at FROM game_config")
+            rows = cur.fetchall()
+            conn.close()
+            cfg = dict(DEFAULT_GAME_CONFIG)
+            last_updated = 0
+            for r in rows:
+                try:
+                    cfg[r[0]] = json.loads(r[1])
+                except Exception:
+                    cfg[r[0]] = r[1]
+                if r[2] and r[2] > last_updated:
+                    last_updated = r[2]
+            res = {"ok": True, "config": cfg, "updated_at": last_updated}
+            res.update(cfg)
+            return self.send_json(res)
 
         # 1. GET /api/lb (Leaderboard)
         if path == "/api/lb":
@@ -663,7 +709,42 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             path = "/api/" + params["path"][0]
         body = self.read_json_body()
 
-        # AUTH: POST /api/auth/register
+        if path == "/api/admin/config":
+            payload = body.get("config", body)
+            now_t = int(time.time())
+            conn = DB()
+            cur = conn
+            for k, v in payload.items():
+                if k in ("admin_code", "ok", "config"):
+                    continue
+                v_str = json.dumps(v)
+                try:
+                    cur.execute("""
+                        INSERT INTO game_config (key, value, updated_at)
+                        VALUES (?, ?, ?)
+                        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+                    """, (k, v_str, now_t))
+                except Exception:
+                    cur.execute("REPLACE INTO game_config (key, value, updated_at) VALUES (?, ?, ?)", (k, v_str, now_t))
+            conn.commit()
+
+            cur.execute("SELECT key, value FROM game_config")
+            rows = cur.fetchall()
+            conn.close()
+            cfg = dict(DEFAULT_GAME_CONFIG)
+            for r in rows:
+                try:
+                    cfg[r[0]] = json.loads(r[1])
+                except Exception:
+                    cfg[r[0]] = r[1]
+
+            return self.send_json({
+                "ok": True,
+                "message": "Đã lưu cấu hình game thành công!",
+                "config": cfg,
+                "updated_at": now_t
+            })
+
         if path == "/api/auth/register":
             username = str(body.get("username", "")).strip().lower()
             password = str(body.get("password", ""))
