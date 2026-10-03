@@ -189,6 +189,10 @@ def init_db():
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, seed_shops)
 
+        try:
+            db.execute("ALTER TABLE users ADD COLUMN store_code TEXT")
+        except Exception:
+            pass
         db.commit()
         db.close()
     except Exception as e:
@@ -592,7 +596,7 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 now_t = int(time.time())
                 day_val = max(1, int(body.get("day", 1)))
                 money_val = int(body.get("money", 400000))
-                lv_val = max(1, min(10, int(body.get("lv", 1))))
+                lv_val = max(1, min(50, int(body.get("lv", 1))))
 
                 cur.execute('''
                     INSERT INTO user_saves (username, save_data, updated_at)
@@ -621,7 +625,7 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 profit = int(body.get("profit", 0))
                 day = max(1, int(body.get("day", 1)))
                 served = max(0, int(body.get("served", 0)))
-                lv = max(1, min(10, int(body.get("lv", 1))))
+                lv = max(1, min(50, int(body.get("lv", 1))))
                 rate = max(1.0, min(5.0, float(body.get("rate", 5.0))))
             except (ValueError, TypeError):
                 return self.send_json({"ok": False, "error": "Invalid data format"}, status=400)

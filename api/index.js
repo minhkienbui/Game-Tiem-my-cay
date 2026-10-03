@@ -50,6 +50,11 @@ module.exports = async (req, res) => {
   }
 
   const sql = neon(dbUrl);
+  // Auto-migration: ensure store_code column exists in users
+  try {
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS store_code TEXT`;
+  } catch (e) {}
+
 
   // Parse body if needed
   let body = req.body || {};
@@ -139,14 +144,14 @@ module.exports = async (req, res) => {
         });
       }
 
-      // 3. GET /api/sync
+      // 3. GET /api/sync (Permanent Store Code / Save Sync)
       if (path === "/api/sync") {
         const code = (urlObj.searchParams.get("code") || "").trim().toUpperCase();
-        const rows = await sql`SELECT save_data, created_at FROM cloud_saves WHERE code = ${code}`;
-        if (rows.length && (Math.floor(Date.now() / 1000) - Number(rows[0].created_at) < 86400)) {
+        const rows = await sql`SELECT save_data, created_at FROM cloud_saves WHERE UPPER(code) = ${code}`;
+        if (rows.length) {
           return res.json({ s: rows[0].save_data });
         }
-        return res.status(404).json({ error: "Mã không đúng hoặc đã hết hạn" });
+        return res.status(404).json({ error: "Mã không đúng hoặc không tìm thấy tiệm" });
       }
 
       // 4. GET /api/prank
@@ -179,7 +184,7 @@ module.exports = async (req, res) => {
         const rows = await sql`
           SELECT u.id, u.username, u.created_at, u.last_login_at, u.login_count,
                  u.device_info, u.current_lv, u.current_day, CAST(u.current_money AS FLOAT) as current_money,
-                 (s.save_data IS NOT NULL) as has_save
+                 u.store_code, (s.save_data IS NOT NULL) as has_save
           FROM users u
           LEFT JOIN user_saves s ON LOWER(u.username) = LOWER(s.username)
           ORDER BY u.last_login_at DESC, u.created_at DESC
@@ -198,10 +203,51 @@ module.exports = async (req, res) => {
           lv: Number(r.current_lv || 1),
           day: Number(r.current_day || 1),
           money: Number(r.current_money || 400000),
+          store_code: r.store_code || "",
           has_save: Boolean(r.has_save)
         }));
 
         return res.json({ ok: true, users, total });
+      }
+
+      // GET /api/admin/store-code/lookup
+      if (path === "/api/admin/store-code/lookup") {
+        const code = (urlObj.searchParams.get("code") || "").trim().toUpperCase();
+        if (!code) return res.status(400).json({ ok: false, error: "Vui lòng nhập mã cửa hàng!" });
+        const rows = await sql`SELECT code, save_data, created_at FROM cloud_saves WHERE UPPER(code) = ${code}`;
+        if (!rows.length) {
+          return res.status(404).json({ ok: false, error: "Không tìm thấy dữ liệu cho mã: " + code });
+        }
+        const userRows = await sql`SELECT username, current_lv, current_day, CAST(current_money AS FLOAT) as current_money FROM users WHERE UPPER(store_code) = ${code}`;
+        return res.json({
+          ok: true,
+          code: rows[0].code,
+          save: rows[0].save_data,
+          created_at: Number(rows[0].created_at),
+          user: userRows[0] || null
+        });
+      }
+
+      // POST /api/admin/user/assign-code
+      if (path === "/api/admin/user/assign-code") {
+        const username = String(body.username || "").trim().toLowerCase();
+        let code = (body.code || generateSyncCode()).trim().toUpperCase();
+        if (username) {
+          const saveRows = await sql`SELECT save_data FROM user_saves WHERE LOWER(username) = ${username}`;
+          const nowT = Math.floor(Date.now() / 1000);
+          if (saveRows.length && saveRows[0].save_data) {
+            await sql`
+              INSERT INTO cloud_saves (code, save_data, created_at)
+              VALUES (${code}, ${saveRows[0].save_data}, ${nowT})
+              ON CONFLICT(code) DO UPDATE SET
+                save_data = EXCLUDED.save_data,
+                created_at = EXCLUDED.created_at
+            `;
+          }
+          await sql`UPDATE users SET store_code = ${code} WHERE LOWER(username) = ${username}`;
+          return res.json({ ok: true, code, username });
+        }
+        return res.status(400).json({ ok: false, error: "Missing username" });
       }
 
       // 7. GET /api/admin/overview
@@ -321,7 +367,7 @@ module.exports = async (req, res) => {
         const saveData = String(body.save || "");
         const dayVal = Math.max(1, parseInt(body.day, 10) || 1);
         const moneyVal = parseInt(body.money, 10) || 400000;
-        const lvVal = Math.max(1, Math.min(10, parseInt(body.lv, 10) || 1));
+        const lvVal = Math.max(1, Math.min(50, parseInt(body.lv, 10) || 1));
         const nowT = Math.floor(Date.now() / 1000);
 
         if (username && saveData) {
@@ -351,7 +397,7 @@ module.exports = async (req, res) => {
         const profit = parseInt(body.profit, 10) || 0;
         const day = Math.max(1, parseInt(body.day, 10) || 1);
         const served = Math.max(0, parseInt(body.served, 10) || 0);
-        const lv = Math.max(1, Math.min(10, parseInt(body.lv, 10) || 1));
+        const lv = Math.max(1, Math.min(50, parseInt(body.lv, 10) || 1));
         const rate = Math.max(1.0, Math.min(5.0, parseFloat(body.rate) || 5.0));
         const nowT = Math.floor(Date.now() / 1000);
 
@@ -430,17 +476,30 @@ module.exports = async (req, res) => {
         return res.json({ rank, total: Math.max(1, Number(totalRows[0]?.cnt || 1)) });
       }
 
-      // 6. POST /api/sync
+      // 6. POST /api/sync (Permanent Store Code / Save Sync)
       if (path === "/api/sync") {
         const saveData = String(body.s || "");
+        let code = (body.code || "").trim().toUpperCase();
+        const username = (body.username || "").trim().toLowerCase();
+        if (!code) {
+          code = generateSyncCode();
+        }
         if (saveData) {
-          const code = generateSyncCode();
           const nowT = Math.floor(Date.now() / 1000);
           await sql`
             INSERT INTO cloud_saves (code, save_data, created_at)
             VALUES (${code}, ${saveData}, ${nowT})
+            ON CONFLICT(code) DO UPDATE SET
+              save_data = EXCLUDED.save_data,
+              created_at = EXCLUDED.created_at
           `;
-          return res.json({ code });
+          if (username) {
+            await sql`
+              UPDATE users SET store_code = ${code}
+              WHERE LOWER(username) = ${username}
+            `;
+          }
+          return res.json({ ok: true, code });
         }
         return res.status(400).json({ error: "No save data" });
       }
