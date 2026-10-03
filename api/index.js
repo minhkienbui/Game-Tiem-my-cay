@@ -548,6 +548,44 @@ module.exports = async (req, res) => {
 
     // ----------------- POST ENDPOINTS -----------------
     if (req.method === "POST") {
+      // POST /api/admin/config (Save Game Configuration)
+      if (path === "/api/admin/config") {
+        const payload = body.config || body;
+        const nowT = Math.floor(Date.now() / 1000);
+        let updatedCount = 0;
+
+        for (const [key, val] of Object.entries(payload)) {
+          if (key === "admin_code" || key === "ok" || key === "config") continue;
+          const valStr = JSON.stringify(val);
+          await sql`
+            INSERT INTO game_config (key, value, updated_at)
+            VALUES (${key}, ${valStr}, ${nowT})
+            ON CONFLICT (key) DO UPDATE SET
+              value = EXCLUDED.value,
+              updated_at = EXCLUDED.updated_at
+          `;
+          updatedCount++;
+        }
+
+        let cfg = { ...DEFAULT_GAME_CONFIG };
+        const rows = await sql`SELECT key, value FROM game_config`;
+        for (const r of rows) {
+          try {
+            cfg[r.key] = JSON.parse(r.value);
+          } catch (e) {
+            cfg[r.key] = r.value;
+          }
+        }
+
+        return res.json({
+          ok: true,
+          message: "Đã lưu cấu hình game thành công!",
+          updatedCount,
+          config: cfg,
+          updated_at: nowT
+        });
+      }
+
       // 1. POST /api/auth/register
       if (path === "/api/auth/register") {
         const username = String(body.username || "").trim().toLowerCase();
