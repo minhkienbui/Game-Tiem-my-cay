@@ -1262,6 +1262,531 @@ html.calm *,html.calm *::before,html.calm *::after{animation:none!important;tran
 /* giao diện tối: biến màu nền, giấy, chữ và hoa văn nền; phần còn lại game tự tạo lúc chạy (darkCSS) */
 :root{--doodle:var(--doodle-lt,none)}
 html.dark{color-scheme:dark;--track:#4A3138;--tile:#231519;--tile-line:#33222A;--paper:#2E1F26;--ink:#F2E3DF;--ink2:#C2A7A2;--pink:#4A2C35;--doodle:var(--doodle-dk,none)}
+
+/* ==========================================================================
+   TỐI ƯU HÓA TOÀN DIỆN GIAO DIỆN TỐI (DARK MODE THEME OPTIMIZATION)
+   Đảm bảo độ tương phản hoàn hảo, màu chữ rõ nét 100%, không bị chìm/trắng trên trắng
+   ========================================================================== */
+html.dark {
+  color-scheme: dark;
+  --night: #7A3346;
+  --night2: #421824;
+  --tile: #201317;
+  --tile-line: #301E25;
+  --paper: #281B21;
+  --ink: #F5EAE7;
+  --ink2: #C8B2AC;
+  --pink: #44222E;
+  --track: #3D2630;
+  --border: #4D303C;
+  --doodle: var(--doodle-dk, none);
+}
+
+/* 1. Header & Street View */
+html.dark #top {
+  background: var(--night2);
+  color: var(--ink);
+  border-bottom: 1px solid #4D2634;
+}
+html.dark #top .ibtn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFF;
+}
+html.dark #top .ibtn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+html.dark #top .sub {
+  color: #C8B2AC;
+}
+
+/* 2. Top Navigation Tabs */
+html.dark .tabs {
+  background: transparent;
+}
+html.dark .tab {
+  background: rgba(255, 255, 255, 0.08);
+  color: #E2D3CF;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.2s;
+}
+html.dark .tab:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+html.dark .tab.on {
+  background: var(--paper);
+  color: #FF6B5E;
+  border-color: transparent;
+  box-shadow: inset 0 -3px 0 #FF6B5E;
+}
+html.dark .tab .bdg {
+  background: var(--chili);
+  color: #FFF;
+}
+html.dark .tabbody {
+  background: var(--paper);
+  border: 1px solid #3E242F;
+}
+
+/* 3. Card "Đi chợ trả giá" (Hagc) - Vàng nâu ấm cúng sang trọng, chữ vàng sáng rõ */
+html.dark .hagc {
+  background: #362817;
+  border: 1.5px solid #5A4325;
+  color: #F5E6CC;
+}
+html.dark .hagc b {
+  color: #FFE082;
+  font-family: var(--fd);
+}
+html.dark .hagc small {
+  color: #D6C5A8;
+}
+html.dark .hagc .hv {
+  background: #483520;
+}
+html.dark .hagc .sbtn.pri {
+  background: var(--chili);
+  color: #FFF;
+}
+html.dark .hagc.done {
+  background: #2E2214;
+  border-color: #4A361E;
+}
+
+/* 4. Card "Nhiệm vụ hôm nay" (Goals) - Đỏ mận quý phái, chữ trắng hồng tương phản cao */
+html.dark .goals {
+  background: #361F28;
+  border: 1.5px solid #582C3C;
+  color: #F5EAE7;
+}
+html.dark .goals .gt {
+  color: #FFB8C6;
+  font-family: var(--fd);
+}
+html.dark .gl {
+  border-top: 1px dashed #582C3C;
+  color: #F5EAE7;
+}
+html.dark .gl span {
+  color: #F5EAE7;
+}
+html.dark .gl small {
+  color: #C8B2AC;
+}
+html.dark .gl em {
+  color: #FF6B5E;
+}
+html.dark .gl.ok span {
+  color: #8C7370;
+  text-decoration: line-through;
+}
+html.dark .gl.ok em {
+  color: #66BB6A;
+}
+
+/* 5. Kho Hàng & Nguyên Liệu (Warehouse Items & Row) */
+html.dark .row {
+  border-bottom: 1px dashed #3F2A33;
+}
+html.dark .rart {
+  background: #38242D;
+  border-radius: 10px;
+}
+html.dark .rinfo b {
+  color: #F5EAE7;
+}
+html.dark .rinfo small {
+  color: #C8B2AC;
+}
+html.dark .rinfo .exp {
+  color: #FF6B5E;
+}
+html.dark .rinfo .chip {
+  background: #233D27;
+  color: #86EFAC;
+}
+
+/* Quantity input: Số hiển thị trắng sáng rõ nét trên nền tối */
+html.dark .qty button {
+  background: #442B35;
+  color: #F5EAE7;
+  border-radius: 10px;
+}
+html.dark .qty button:hover {
+  background: #563744;
+}
+html.dark .qty button.p {
+  background: var(--chili);
+  color: #FFFFFF;
+}
+html.dark .qty button.p:hover {
+  background: var(--chili-d);
+}
+html.dark .qty .qin {
+  background: #1C1015;
+  color: #FFFFFF !important;
+  border: 1.5px solid #563744;
+}
+html.dark .qty .qin:focus {
+  border-color: var(--chili);
+}
+html.dark .qty .qin::placeholder {
+  color: #7E655B;
+}
+html.dark .qty span {
+  color: #F5EAE7;
+}
+
+/* 6. Ghi Chú & Nút Bấm Trong Tab */
+html.dark h2, html.dark h3, html.dark h4 {
+  color: #F5EAE7;
+}
+html.dark .note {
+  color: #C8B2AC;
+}
+html.dark .note b {
+  color: #F5EAE7;
+}
+html.dark .sbtn {
+  background: #442B35;
+  color: #F5EAE7;
+  border: 1px solid #563744;
+}
+html.dark .sbtn:hover {
+  background: #563744;
+  color: #FFFFFF;
+}
+html.dark .sbtn.pri {
+  background: var(--chili);
+  color: #FFFFFF;
+  border-color: transparent;
+}
+
+/* 7. Tab Nâng Cấp (Upgrades Tab) */
+html.dark .lvcard {
+  background: #362817;
+  border: 1.5px solid #5A4325;
+  color: #F5E6CC;
+}
+html.dark .lvcard b {
+  color: #FFE082;
+  font-family: var(--fd);
+}
+html.dark .lvcard small {
+  color: #D6C5A8;
+}
+html.dark .lvcard .hint2 {
+  color: #C8B2AC;
+}
+html.dark .xpbar {
+  background: #25141B;
+}
+html.dark .xpbar i {
+  background: linear-gradient(90deg, #F7C948, #FF8F00);
+}
+
+/* 8. Tab Trang Trí (Decor Tab) */
+html.dark .cute {
+  background: #361F28;
+  border: 1.5px solid #582C3C;
+  color: #F5EAE7;
+}
+html.dark .cute .hearts {
+  color: #FF6B5E;
+}
+
+/* 9. Tab Đánh Giá & Góp Ý (Reviews Tab) */
+html.dark .rvhead {
+  border-bottom: 1px solid #402B33;
+}
+html.dark .rvhead .num {
+  color: #F5EAE7;
+}
+html.dark .rvhead .note {
+  color: #C8B2AC;
+}
+html.dark .rv {
+  border-bottom: 1px dashed #402B33;
+}
+html.dark .rv b {
+  color: #F5EAE7;
+}
+html.dark .rv small {
+  color: #C8B2AC;
+}
+html.dark .rv .av {
+  background: #3E242E;
+}
+html.dark .rvbars button {
+  color: #C8B2AC;
+}
+html.dark .rvbars .bar {
+  background: #38242D;
+}
+html.dark .fb-box {
+  background: #361F28;
+  border: 1.5px solid #582C3C;
+  color: #F5EAE7;
+}
+
+/* 10. Tab Sổ Sách & Thuế (Ledger & Tax Tab) */
+html.dark .sumc div {
+  background: #361F28;
+  border: 1.5px solid #4A2B35;
+  color: #F5EAE7;
+}
+html.dark .sumc small {
+  color: #C8B2AC;
+}
+html.dark .sumc b {
+  color: #F5EAE7;
+}
+html.dark .sumc b.pos {
+  color: #66BB6A;
+}
+html.dark .sumc b.neg {
+  color: #EF5350;
+}
+html.dark .tax-sec {
+  background: #361F28;
+  border: 1.5px solid #582C3C;
+}
+html.dark .tax-sec h4 {
+  color: #F5EAE7 !important;
+}
+html.dark .tax-sec p {
+  color: #D6C5C0 !important;
+}
+html.dark .dayc {
+  background: #361F28;
+  border: 1.5px solid #4A2B35;
+  color: #F5EAE7;
+}
+html.dark .dayc summary span {
+  color: #F5EAE7;
+}
+html.dark .dayc summary small {
+  color: #C8B2AC;
+}
+html.dark .dayc summary b.pos {
+  color: #66BB6A;
+}
+html.dark .dayc summary b.neg {
+  color: #EF5350;
+}
+html.dark .ledger {
+  color: #F5EAE7;
+}
+html.dark .chart text {
+  fill: #C8B2AC;
+}
+
+/* 11. Hộp Thoại Modal & Drama Dialogs */
+html.dark #card {
+  background: #281B21;
+  color: #F5EAE7;
+  border: 1.5px solid #4A2B35;
+}
+html.dark #card h2 {
+  color: #F5EAE7;
+}
+html.dark #card p {
+  color: #D6C5C0;
+}
+html.dark #card .note {
+  color: #C8B2AC;
+}
+html.dark #card .bill {
+  background: #361F28;
+  border: 1.5px solid #4A2B35;
+  color: #F5EAE7;
+}
+html.dark #card .btns {
+  background: #281B21;
+}
+html.dark #card .btns button {
+  background: #442B35;
+  color: #F5EAE7;
+  border: 1px solid #563744;
+}
+html.dark #card .btns button:hover {
+  background: #563744;
+  color: #FFFFFF;
+}
+html.dark #card .btns button.pri {
+  background: var(--chili);
+  color: #FFFFFF;
+  border-color: transparent;
+}
+html.dark #card input, html.dark #card textarea {
+  background: #1C1015;
+  color: #FFFFFF;
+  border: 1.5px solid #563744;
+}
+html.dark #card input:focus, html.dark #card textarea:focus {
+  border-color: var(--chili);
+}
+html.dark #card .scode {
+  background: #382815;
+  color: #FFE082;
+  border: 2px dashed #E9A23B;
+}
+html.dark .drama {
+  background: #361F28;
+  color: #F5EAE7;
+  border-radius: 14px;
+}
+html.dark .drama h2 {
+  color: #F5EAE7;
+}
+html.dark .drama p {
+  color: #D6C5C0;
+}
+html.dark .drama .dtag {
+  background: #442B35;
+  color: #FFB8C6;
+}
+
+/* 12. Modal Đăng Nhập / Đăng Ký */
+html.dark .auth-form label {
+  color: #F5EAE7;
+}
+html.dark .auth-form input {
+  background: #1C1015;
+  color: #FFFFFF;
+  border: 1.5px solid #563744;
+}
+html.dark .auth-form input:focus {
+  border-color: var(--chili);
+}
+html.dark .auth-form input::placeholder {
+  color: #7E655B;
+}
+
+/* 13. Bảng Xếp Hạng & Bảng Giải Mì */
+html.dark .lbrd li {
+  background: #361F28;
+  color: #F5EAE7;
+  border: 1px solid #4A2B35;
+}
+html.dark .lbrd li.me {
+  background: #442B35;
+  border-color: var(--chili);
+}
+html.dark .lbrd .nm b {
+  color: #F5EAE7;
+}
+html.dark .lbrd .nm small {
+  color: #C8B2AC;
+}
+html.dark .lbrd em {
+  color: #F7C948;
+}
+html.dark .lbme {
+  background: #3A252E;
+  color: #F5EAE7;
+  border: 1.5px solid #563744;
+}
+html.dark .lbme b {
+  color: #F5EAE7;
+}
+html.dark .lbme small {
+  color: #C8B2AC;
+}
+html.dark .lbme em {
+  color: #F7C948;
+}
+
+/* 14. Màn Bán Hàng & Bếp Nấu */
+html.dark .bubble {
+  background: #281B21;
+  color: #F5EAE7;
+  box-shadow: 0 2px 0 #3D2630;
+}
+html.dark .bubble .say {
+  color: #F5EAE7;
+}
+html.dark .bubble .say b {
+  color: #FFE082;
+}
+html.dark .cups button {
+  background: #442B35;
+  color: #F5EAE7;
+}
+html.dark .cups button.cur {
+  background: var(--chili);
+  color: #FFFFFF;
+}
+html.dark .cups button.dn {
+  background: #233D27;
+  color: #86EFAC;
+}
+html.dark .apps .tk {
+  background: #361F28;
+  color: #F5EAE7;
+  border: 1px solid #4A2B35;
+}
+html.dark .apps .tk b {
+  color: #F5EAE7;
+}
+html.dark .apps .tk small {
+  color: #C8B2AC;
+}
+html.dark .kitchen {
+  background: linear-gradient(#36202A, #24141B);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.05), 0 4px 0 #180D13;
+}
+html.dark .st {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #F5EAE7;
+}
+html.dark .st:active {
+  background: rgba(255, 255, 255, 0.16);
+}
+html.dark .st .t {
+  color: #F5EAE7;
+}
+html.dark .st .n {
+  background: #1C1015;
+  color: #F5EAE7;
+}
+html.dark .work {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px dashed #563744;
+}
+html.dark .work .meta {
+  color: #C8B2AC;
+}
+html.dark .work .ph {
+  color: #8C7370;
+}
+
+/* 15. Sự Kiện & Thông Báo */
+html.dark .evc {
+  background: #362817;
+  border: 1px solid #5A4325;
+  color: #F5E6CC;
+}
+html.dark .evc b {
+  color: #FFE082;
+}
+html.dark .evc small {
+  color: #D6C5A8;
+}
+html.dark .server-ann-banner {
+  background: #362817 !important;
+  border-color: #5A4325 !important;
+  color: #FFE082 !important;
+}
+
+/* 16. Toast Thông Báo */
+html.dark #toast {
+  background: #421D28;
+  color: #FFFFFF;
+  border: 1px solid #6E3545;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -1280,7 +1805,7 @@ html.dark{color-scheme:dark;--track:#4A3138;--tile:#231519;--tile-line:#33222A;-
 
 <script>(function(){var o=0,a=!1;try{var s=localStorage.getItem("tiemMiCayTheme");(s==="dark"||s!=="light"&&window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)&&(document.documentElement.className+=" dark")}catch{}var c=/zaloJSV2|webkit\.messageHandlers|Java object is gone|iabjs:|chrome-extension:|moz-extension:|safari-(web-)?extension:|webkit-masked-url|ResizeObserver loop|^Script error\.?$|isReCreate|processRandomSelector|insertStyle|__firefox__|DarkReader|ethereum|contentScriptData|runtime\.sendMessage|JSON-RPC|Loading chunk|_0x[0-9a-f]{4,}|\bgmo\b|<anonymous>:1:|[@( ]https?:\/\/[^\s)]*:1:\d+/;function n(e,t,d){if(!(o>=3)&&(e=String(e||""),t=String(t||""),!(c.test(e)||c.test(t)||d&&String(d).indexOf(location.origin)!==0))){o++;try{var l=JSON.stringify({m:e.slice(0,200),s:t.split(`
 `).slice(0,4).join(" | ").slice(0,400),ua:String(navigator.userAgent||"").slice(0,180)}),r=window.__MC_BASE,u=typeof r=="string"&&/^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)+(:\d+)?$/.test(r)?r+"/":"/";if(navigator.sendBeacon&&navigator.sendBeacon(u+"api/err",new Blob([l],{type:"application/json"})))return;window.fetch&&fetch(u+"api/err",{method:"POST",headers:{"Content-Type":"application/json"},body:l,keepalive:!0}).catch(function(){})}catch{}}}function i(){if(!(a||window.__mcReady)){var e=document.getElementById("view");if(!(!e||e.children.length)){a=!0;var t=document.createElement("div");t.id="crash",t.setAttribute("style","position:fixed;left:0;top:0;right:0;bottom:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;background:#FFF4E8;color:#5A2334;font:16px/1.5 system-ui,-apple-system,sans-serif;text-align:center"),t.innerHTML='<div style="max-width:320px"><p style="font-size:20px;font-weight:800;margin:0 0 8px">Tiệm gặp trục trặc</p><p style="margin:0 0 16px">Tiến trình của bạn vẫn còn nguyên. Bấm tải lại để vào quán.</p><button type="button" style="font:inherit;font-weight:700;padding:10px 24px;border:0;border-radius:99px;background:#EF4B3F;color:#fff">Tải lại</button></div>',t.querySelector("button").onclick=function(){location.reload()},(document.body||document.documentElement).appendChild(t)}}}window.__mcReport=n,window.__mcRescue=i,addEventListener("load",function(){setTimeout(i,8000)}),addEventListener("error",function(e){n(e.message,e.error&&e.error.stack||(e.filename||"")+":"+(e.lineno||0)+":"+(e.colno||0),e.filename),document.readyState==="complete"&&setTimeout(i,8000)}),addEventListener("unhandledrejection",function(e){var t=e.reason;n(t&&t.message||String(t),t&&t.stack)})})();</script>
-<script src="game.js?v=14"></script>
+<script src="game.js?v=15"></script>
 
 </body>
 </html>
