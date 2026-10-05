@@ -1144,73 +1144,121 @@ function showAdminInboxModal() {
   ]);
 }
 
-// --- QUÀ TẶNG TIỀN TỪ ADMIN (ADMIN GIFTS TO NOODLE SHOP) ---
+// --- QUÀ TẶNG & ĐIỀU CHỈNH TIỀN TỪ ADMIN (ONE-TIME PERSISTENT CLAIM) ---
+let adminGiftsCheckedThisSession = false;
+
+function getClaimedGiftIds() {
+  try {
+    return JSON.parse(localStorage.getItem("tiemMiCayClaimedGifts") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function markGiftClaimedLocally(id) {
+  if (!id) return;
+  try {
+    const list = getClaimedGiftIds();
+    if (!list.includes(id)) {
+      list.push(id);
+      localStorage.setItem("tiemMiCayClaimedGifts", JSON.stringify(list.slice(-100)));
+    }
+  } catch (e) {}
+}
+
 function showAdminGiftClaimModal(gift) {
   const amt = Number(gift.amount) || 0;
-  const amtStr = y(amt);
+  const isDeduct = amt < 0;
+  const absAmt = Math.abs(amt);
+  const amtStr = y(absAmt);
+
+  // Mark locally claimed IMMEDIATELY before dialog can even re-appear!
+  markGiftClaimedLocally(gift.id);
 
   X(`
     <div style="text-align:center;padding:4px 0;">
-      <div style="font-size:48px;animation:boing 0.8s ease infinite;">🎁💰✨</div>
-      <h2 style="font-family:var(--fd);color:#C62828;font-size:23px;margin:6px 0;">QUÀ TẶNG TỪ ADMIN!</h2>
+      <div style="font-size:46px;animation:boing 0.8s ease infinite;">${isDeduct ? '🏛️⚠️' : '🎁💰✨'}</div>
+      <h2 style="font-family:var(--fd);color:${isDeduct ? '#C62828' : '#2E7D32'};font-size:22px;margin:6px 0;">
+        ${isDeduct ? 'THÔNG BÁO KHẤU TRỪ TIỀN KÉT' : 'QUÀ TẶNG TIỀN TỪ ADMIN!'}
+      </h2>
       <p style="font-size:13.5px;color:#5A2334;font-weight:700;margin-bottom:10px;">
-        Admin quản trị đã gửi tặng phần quà đặc biệt vào két quán của bạn:
+        ${isDeduct ? 'Ban quản trị đã thực hiện khấu trừ tiền trong két của tiệm mì:' : 'Admin quản trị đã gửi tặng phần quà đặc biệt vào két quán của bạn:'}
       </p>
 
-      <div style="background:linear-gradient(135deg, #FFF8E1, #FFECB3);border:2.5px solid #FFC107;border-radius:14px;padding:16px 14px;margin:10px 0;box-shadow:0 4px 15px rgba(255,193,7,0.3);">
-        <div style="font-size:14px;color:#92400E;margin-bottom:4px;font-weight:800;text-transform:uppercase;">
-          ${V(gift.title || "Quà Tặng Từ Ban Quản Trị")}
+      <div style="background:linear-gradient(135deg, ${isDeduct ? '#FFF5F5, #FED7D7' : '#FFF8E1, #FFECB3'});border:2.5px solid ${isDeduct ? '#E53E3E' : '#FFC107'};border-radius:14px;padding:16px 14px;margin:10px 0;box-shadow:0 4px 15px rgba(0,0,0,0.12);">
+        <div style="font-size:14px;color:${isDeduct ? '#9B1C1C' : '#92400E'};margin-bottom:4px;font-weight:800;text-transform:uppercase;">
+          ${V(gift.title || (isDeduct ? "Khấu Trừ Tiền Két" : "Quà Tặng Từ Ban Quản Trị"))}
         </div>
-        <div style="font-size:34px;font-weight:900;color:#C62828;letter-spacing:1px;margin:6px 0;">
-          +${amtStr}
+        <div style="font-size:34px;font-weight:900;color:${isDeduct ? '#C62828' : '#2E7D32'};letter-spacing:1px;margin:6px 0;">
+          ${isDeduct ? '−' : '+'}${amtStr}
         </div>
-        ${gift.message ? `<div style="font-size:12.5px;color:#78350F;margin-top:6px;font-style:italic;background:rgba(255,255,255,0.7);padding:6px 10px;border-radius:8px;">“${V(gift.message)}”</div>` : ''}
+        ${gift.message ? `<div style="font-size:12.5px;color:${isDeduct ? '#742A2A' : '#78350F'};margin-top:6px;font-style:italic;background:rgba(255,255,255,0.7);padding:6px 10px;border-radius:8px;">“${V(gift.message)}”</div>` : ''}
       </div>
 
-      <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:8px 12px;font-size:12px;color:#166534;font-weight:700;line-height:1.45;margin-bottom:6px;">
-        ✓ Tiền thưởng sẽ được cộng trực tiếp vào két tiền của quán để bạn nhập hàng và nâng cấp quán!
+      <div style="background:${isDeduct ? '#FFF5F5' : '#F0FDF4'};border:1px solid ${isDeduct ? '#FEB2B2' : '#86EFAC'};border-radius:10px;padding:8px 12px;font-size:12px;color:${isDeduct ? '#9B1C1C' : '#166534'};font-weight:700;line-height:1.45;margin-bottom:6px;">
+        ${isDeduct ? '⚠️ Tiền két của quán đã được cập nhật tương ứng theo quyết định quản trị.' : '✓ Tiền thưởng sẽ được cộng trực tiếp vào két tiền của quán để bạn nhập hàng và nâng cấp quán!'}
       </div>
     </div>`,
     [
-      ["💰 Nhận Tiền Vào Két (+" + amtStr + ")", async () => {
-        o.money = (o.money || 0) + amt;
-        o.cur.gift = (o.cur.gift || 0) + amt;
+      [isDeduct ? "✓ Đã Hiểu & Đóng" : ("💰 Nhận Tiền Vào Két (+" + amtStr + ")"), () => {
+        // CLOSE MODAL IMMEDIATELY!
+        const modal = d("modal");
+        if (modal) modal.hidden = true;
+
+        // Apply money to game state
+        if (isDeduct) {
+          o.money = Math.max(0, (o.money || 0) - absAmt);
+          M(`Đã khấu trừ ${amtStr} tiền két.`);
+        } else {
+          o.money = (o.money || 0) + absAmt;
+          o.cur.gift = (o.cur.gift || 0) + absAmt;
+          C("star");
+          C("coin");
+          sn(50);
+          M(`🎉 Đã nhận +${amtStr} tiền quà tặng từ Admin vào két quán!`);
+        }
+
         z();
         syncUserStoreSave();
-
-        C("star");
-        C("coin");
-        sn(50);
-        M(`🎉 Đã nhận +${amtStr} tiền quà tặng từ Admin vào két quán!`);
-
-        try {
-          await fetch("/api/user/gift/claim", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: gift.id })
-          });
-        } catch (e) {}
-
         xA();
         Re();
-      }, 1, 1],
-      ["Để sau", () => {}]
+
+        // Server confirmation
+        const u = localStorage.getItem("tiemMiCayUser") || "";
+        const code = o.storeCode || "";
+        const id = VA();
+        fetch("/api/user/gift/claim", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: gift.id, username: u, store_code: code, shop_id: id })
+        }).catch(() => {});
+      }]
     ]
   );
 }
 
 async function checkAdminGifts() {
   if (!o.tutDone) return false;
+  if (adminGiftsCheckedThisSession) return false; // RUN ONLY ONCE PER PAGE LOAD!
+  adminGiftsCheckedThisSession = true;
+
   const u = localStorage.getItem("tiemMiCayUser") || "";
   const code = o.storeCode || "";
   const id = VA();
+
+  if (!u && !code && (!id || id === "guest")) return false;
+
   try {
     const res = await fetch(`/api/user/gifts?id=${encodeURIComponent(id)}&username=${encodeURIComponent(u)}&code=${encodeURIComponent(code)}`);
     if (res.ok) {
       const data = await res.json();
       if (data.gifts && data.gifts.length > 0) {
-        showAdminGiftClaimModal(data.gifts[0]);
-        return true;
+        const claimedList = getClaimedGiftIds();
+        const unclaimed = data.gifts.filter(g => !claimedList.includes(g.id));
+        if (unclaimed.length > 0) {
+          showAdminGiftClaimModal(unclaimed[0]);
+          return true;
+        }
       }
     }
   } catch (e) {}

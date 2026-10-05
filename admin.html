@@ -1030,57 +1030,97 @@
     </div>
   </main>
 
-  <!-- MODAL: TẶNG TIỀN CHO QUÁN MÌ / NGƯỜI CHƠI -->
-  <div id="adminGiftModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99998;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
-    <div style="background:#FFF;border-radius:18px;max-width:440px;width:100%;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,0.35);text-align:left;">
+  <!-- MODAL: QUẢN LÝ NGUỒN TIỀN CỬA HÀNG MÌ CAY (THÊM / TRỪ / CÀI ĐẶT TIỀN KÉT) -->
+  <div id="adminMoneyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:99998;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+    <div style="background:#FFF;border-radius:18px;max-width:460px;width:100%;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,0.4);text-align:left;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-        <h3 style="margin:0;color:#C62828;font-size:18px;display:flex;align-items:center;gap:6px;">
-          <span>🎁</span> Tặng Tiền Cho Quán Mì
+        <h3 style="margin:0;color:var(--sidebar);font-size:18px;display:flex;align-items:center;gap:8px;">
+          <span>💵</span> Quản Lý Nguồn Tiền Cửa Hàng
         </h3>
-        <button type="button" onclick="closeGiftModal()" style="border:none;background:#F1F3F5;color:#555;width:28px;height:28px;border-radius:50%;cursor:pointer;font-weight:800;font-size:14px;">✕</button>
+        <button type="button" onclick="closeMoneyModal()" style="border:none;background:#F1F3F5;color:#555;width:28px;height:28px;border-radius:50%;cursor:pointer;font-weight:800;font-size:14px;">✕</button>
       </div>
 
-      <div style="background:#FFF9EB;border:1px solid #FCD34D;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400E;">
-        Đang tặng quà cho: <b id="giftTargetDisplay" style="color:#C62828;font-size:14px;">Tài khoản</b>
+      <!-- TARGET USER INFO CARD -->
+      <div style="background:#FFF9EB;border:1.5px solid #FCD34D;border-radius:12px;padding:12px 14px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:11.5px;color:#8A5A44;text-transform:uppercase;font-weight:700;">ĐỐI TƯỢNG ĐIỀU CHỈNH</div>
+            <div id="moneyTargetName" style="font-size:16px;font-weight:800;color:var(--sidebar);margin-top:2px;">Tài khoản</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11.5px;color:#8A5A44;text-transform:uppercase;font-weight:700;">TIỀN KÉT HIỆN TẠI</div>
+            <div id="moneyCurrentDisplay" style="font-size:18px;font-weight:900;color:#2E7D32;margin-top:2px;">0đ</div>
+          </div>
+        </div>
       </div>
 
-      <form onsubmit="event.preventDefault(); submitAdminGift();">
-        <input type="hidden" id="giftTargetType" value="user">
-        <input type="hidden" id="giftTargetId" value="">
-        <input type="hidden" id="giftStoreCode" value="">
+      <form onsubmit="event.preventDefault(); submitMoneyAdjust();">
+        <input type="hidden" id="moneyTargetType" value="user">
+        <input type="hidden" id="moneyTargetId" value="">
+        <input type="hidden" id="moneyStoreCode" value="">
+        <input type="hidden" id="moneyCurrentRaw" value="0">
 
-        <!-- PRESET QUICK AMOUNT CHIPS -->
-        <div style="margin-bottom:14px;">
-          <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:6px;">Chọn nhanh mức tiền thưởng:</label>
-          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:6px;">
-            <button type="button" class="btn-act" onclick="setGiftAmount(50000)" style="font-weight:700;">+50.000đ</button>
-            <button type="button" class="btn-act" onclick="setGiftAmount(100000)" style="font-weight:700;">+100.000đ</button>
-            <button type="button" class="btn-act" onclick="setGiftAmount(200000)" style="font-weight:700;">+200.000đ</button>
-            <button type="button" class="btn-act" onclick="setGiftAmount(500000)" style="font-weight:700;background:#FFF3D6;color:#B45309;">+500.000đ</button>
-            <button type="button" class="btn-act" onclick="setGiftAmount(1000000)" style="font-weight:700;background:#E8F5E9;color:#2E7D32;">+1.000.000đ</button>
-            <button type="button" class="btn-act" onclick="setGiftAmount(5000000)" style="font-weight:700;background:#E3F2FD;color:#1565C0;">+5.000.000đ</button>
+        <!-- ACTION SELECTOR TABS -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:6px;">Chọn hình thức điều chỉnh nguồn tiền:</label>
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:6px;" id="moneyActionGrid">
+            <button type="button" class="btn-act" id="btnActAdd" onclick="setMoneyAction('add')" style="padding:10px 4px;font-weight:800;background:#E8F5E9;color:#2E7D32;border:2px solid #2E7D32;">
+              🟢 + Thêm Tiền
+            </button>
+            <button type="button" class="btn-act" id="btnActDeduct" onclick="setMoneyAction('deduct')" style="padding:10px 4px;font-weight:700;background:#FFF;color:#C92A2A;border:1.5px solid var(--border);">
+              🔴 − Trừ Tiền
+            </button>
+            <button type="button" class="btn-act" id="btnActSet" onclick="setMoneyAction('set')" style="padding:10px 4px;font-weight:700;background:#FFF;color:#1971C2;border:1.5px solid var(--border);">
+              ⚙️ = Đặt Lại
+            </button>
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="giftAmountInput">Số tiền muốn tặng (VNĐ): <span style="color:#C62828;">*</span></label>
-          <input type="number" id="giftAmountInput" placeholder="VD: 500000" min="10000" step="10000" required style="font-size:16px;font-weight:800;color:#2E7D32;">
+        <!-- QUICK AMOUNT CHIPS -->
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px;">Chọn nhanh mức tiền:</label>
+          <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:6px;">
+            <button type="button" class="btn-act" onclick="setMoneyQuickAmount(50000)">50k</button>
+            <button type="button" class="btn-act" onclick="setMoneyQuickAmount(100000)">100k</button>
+            <button type="button" class="btn-act" onclick="setMoneyQuickAmount(500000)">500k</button>
+            <button type="button" class="btn-act" onclick="setMoneyQuickAmount(1000000)">1 Triệu</button>
+            <button type="button" class="btn-act" onclick="setMoneyQuickAmount(2000000)">2 Triệu</button>
+            <button type="button" class="btn-act" onclick="setMoneyQuickAmount(5000000)">5 Triệu</button>
+            <button type="button" class="btn-act" onclick="setMoneyQuickAmount(10000000)">10 Triệu</button>
+            <button type="button" class="btn-act" onclick="setMoneyQuickAmount(50000000)">50 Triệu</button>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="giftTitleInput">Tiêu đề phần quà:</label>
-          <input type="text" id="giftTitleInput" value="🎁 Quà Tặng Từ Ban Quản Trị" maxlength="60">
+        <!-- AMOUNT INPUT -->
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="moneyAmountInput" id="moneyInputLabel">Số tiền muốn thêm vào két (VNĐ): <span style="color:#C62828;">*</span></label>
+          <input type="number" id="moneyAmountInput" placeholder="VD: 500000" min="0" step="10000" required style="font-size:17px;font-weight:800;color:var(--sidebar);" oninput="updateMoneyPreview()">
         </div>
 
-        <div class="form-group">
-          <label for="giftMessageInput">Lời nhắn gửi kèm:</label>
-          <input type="text" id="giftMessageInput" value="Admin gửi tặng vốn kinh doanh, chúc quán bạn buôn may bán đắt!" maxlength="150">
+        <!-- LIVE PREVIEW CALCULATION BOX -->
+        <div id="moneyPreviewBox" style="background:#F8F9FA;border:1px solid #E9ECEF;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:var(--text-muted);">Tiền két sau khi sửa:</span>
+          <b id="moneyPreviewVal" style="font-size:16px;color:#2E7D32;">0đ</b>
         </div>
 
-        <div style="display:flex;gap:10px;margin-top:18px;">
-          <button type="button" class="btn-act" onclick="closeGiftModal()" style="flex:1;padding:11px;">Hủy Bỏ</button>
-          <button type="submit" class="btn-primary" style="flex:2;padding:11px;font-size:14px;justify-content:center;background:#2E7D32;">
-            <span>🚀 Gửi Tặng Tiền Ngay</span>
+        <!-- REASON INPUT -->
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="moneyReasonInput">Lý do điều chỉnh (tùy chọn):</label>
+          <input type="text" id="moneyReasonInput" placeholder="Ví dụ: Admin thưởng vốn kinh doanh, Phạt vi phạm, v.v." maxlength="120">
+        </div>
+
+        <!-- NOTIFY CHECKBOX -->
+        <div style="margin-bottom:16px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);font-weight:700;cursor:pointer;">
+            <input type="checkbox" id="moneyNotifyCheck" checked style="width:18px;height:18px;accent-color:#2E7D32;">
+            Gửi thông báo popup vào game cho người chơi khi mở quán
+          </label>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button type="button" class="btn-act" onclick="closeMoneyModal()" style="flex:1;padding:11px;">Hủy Bỏ</button>
+          <button type="submit" id="btnSubmitMoney" class="btn-primary" style="flex:2;padding:11px;font-size:14px;justify-content:center;background:#2E7D32;">
+            <span>🚀 Xác Nhận Cập Nhật Tiền</span>
           </button>
         </div>
       </form>
@@ -1680,7 +1720,7 @@
             <div style="display:flex;gap:4px;flex-wrap:wrap;">
               ${u.has_save ? `<button class="btn-act btn-edit" onclick="viewUserSave('${escapeHtml(u.username)}')">👁️ Save</button>` : ''}
               ${u.store_code ? `<button class="btn-act" style="background:#E8F5E9;color:#2E7D32;" onclick="adminReceiveStoreToTest('${escapeHtml(u.store_code)}')">🎮 Test</button>` : ''}
-              <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openGiftModal('user', '${escapeHtml(u.username)}', '${escapeHtml(u.username)}', '${escapeHtml(u.store_code || '')}')">🎁 Tặng Tiền</button>
+              <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openMoneyModal('user', '${escapeHtml(u.username)}', '${escapeHtml(u.username)}', ${u.money || 400000}, '${escapeHtml(u.store_code || '')}')" style="background:#E8F5E9;color:#2E7D32;border:1.5px solid #A5D6A7;font-weight:800;font-size:12px;">💵 Thêm/Trừ Tiền</button>
               <button class="btn-act" onclick="resetUserPassword('${escapeHtml(u.username)}')">🔑 Pass</button>
               <button class="btn-act btn-del" onclick="deleteUser('${escapeHtml(u.username)}')">🗑️</button>
             </div>
@@ -2126,49 +2166,117 @@
       }
     }
 
-    // --- ADMIN GIFT MONEY FUNCTIONS ---
-    function openGiftModal(type, id, name, code = '') {
-      const modal = document.getElementById("adminGiftModal");
+    // --- ADVANCED MONEY MANAGEMENT (ADD / DEDUCT / SET FUNDS) ---
+    let currentMoneyAction = "add";
+
+    function openMoneyModal(type, id, name, curMoney = 400000, code = '') {
+      const modal = document.getElementById("adminMoneyModal");
       if (!modal) return;
-      document.getElementById("giftTargetType").value = type;
-      document.getElementById("giftTargetId").value = id;
-      document.getElementById("giftStoreCode").value = code;
 
-      const displayEl = document.getElementById("giftTargetDisplay");
-      if (displayEl) {
-        displayEl.innerHTML = `${escapeHtml(name)} <small style="color:#888;">(${type === 'user' ? 'Tài khoản' : 'Mã quán'}: ${escapeHtml(id)}${code ? ` · Mã tiệm: ${escapeHtml(code)}` : ''})</small>`;
-      }
+      document.getElementById("moneyTargetType").value = type;
+      document.getElementById("moneyTargetId").value = id;
+      document.getElementById("moneyStoreCode").value = code;
+      document.getElementById("moneyCurrentRaw").value = curMoney;
 
-      document.getElementById("giftAmountInput").value = "500000";
+      document.getElementById("moneyTargetName").innerHTML = `${escapeHtml(name)} <small style="color:#888;font-weight:400;">(${type === 'user' ? 'Tài khoản' : 'Mã quán'}: ${escapeHtml(id)})</small>`;
+      document.getElementById("moneyCurrentDisplay").textContent = formatMoney(curMoney);
+
+      setMoneyAction("add");
+      document.getElementById("moneyAmountInput").value = "500000";
+      document.getElementById("moneyReasonInput").value = "";
+      document.getElementById("moneyNotifyCheck").checked = true;
+
+      updateMoneyPreview();
       modal.style.display = "flex";
-      setTimeout(() => document.getElementById("giftAmountInput")?.focus(), 50);
+      setTimeout(() => document.getElementById("moneyAmountInput")?.focus(), 50);
     }
 
-    function closeGiftModal() {
-      const modal = document.getElementById("adminGiftModal");
+    function closeMoneyModal() {
+      const modal = document.getElementById("adminMoneyModal");
       if (modal) modal.style.display = "none";
     }
 
-    function setGiftAmount(val) {
-      const inp = document.getElementById("giftAmountInput");
-      if (inp) inp.value = val;
+    function setMoneyAction(action) {
+      currentMoneyAction = action;
+      const btnAdd = document.getElementById("btnActAdd");
+      const btnDeduct = document.getElementById("btnActDeduct");
+      const btnSet = document.getElementById("btnActSet");
+      const label = document.getElementById("moneyInputLabel");
+      const btnSubmit = document.getElementById("btnSubmitMoney");
+
+      [btnAdd, btnDeduct, btnSet].forEach(b => {
+        if (b) {
+          b.style.border = "1.5px solid var(--border)";
+          b.style.background = "#FFF";
+          b.style.fontWeight = "700";
+        }
+      });
+
+      if (action === "add") {
+        if (btnAdd) { btnAdd.style.background = "#E8F5E9"; btnAdd.style.color = "#2E7D32"; btnAdd.style.border = "2px solid #2E7D32"; btnAdd.style.fontWeight = "800"; }
+        if (label) label.innerHTML = 'Số tiền muốn <b>CỘNG THÊM</b> vào két (VNĐ): <span style="color:#C62828;">*</span>';
+        if (btnSubmit) { btnSubmit.style.background = "#2E7D32"; btnSubmit.innerHTML = '<span>🚀 Xác Nhận Cộng Tiền</span>'; }
+      } else if (action === "deduct") {
+        if (btnDeduct) { btnDeduct.style.background = "#FFF5F5"; btnDeduct.style.color = "#C92A2A"; btnDeduct.style.border = "2px solid #C92A2A"; btnDeduct.style.fontWeight = "800"; }
+        if (label) label.innerHTML = 'Số tiền muốn <b>TRỪ BỚT</b> khỏi két (VNĐ): <span style="color:#C62828;">*</span>';
+        if (btnSubmit) { btnSubmit.style.background = "#C92A2A"; btnSubmit.innerHTML = '<span>⚠️ Xác Nhận Trừ Tiền</span>'; }
+      } else {
+        if (btnSet) { btnSet.style.background = "#E7F5FF"; btnSet.style.color = "#1971C2"; btnSet.style.border = "2px solid #1971C2"; btnSet.style.fontWeight = "800"; }
+        if (label) label.innerHTML = 'Số tiền mới muốn <b>ĐẶT CHO KÉT</b> (VNĐ): <span style="color:#C62828;">*</span>';
+        if (btnSubmit) { btnSubmit.style.background = "#1971C2"; btnSubmit.innerHTML = '<span>⚙️ Xác Nhận Đặt Tiền</span>'; }
+      }
+
+      updateMoneyPreview();
     }
 
-    async function submitAdminGift() {
-      const type = document.getElementById("giftTargetType").value;
-      const id = document.getElementById("giftTargetId").value;
-      const code = document.getElementById("giftStoreCode").value;
-      const amount = parseInt(document.getElementById("giftAmountInput").value, 10) || 0;
-      const title = document.getElementById("giftTitleInput").value.trim();
-      const message = document.getElementById("giftMessageInput").value.trim();
+    function setMoneyQuickAmount(val) {
+      const inp = document.getElementById("moneyAmountInput");
+      if (inp) {
+        inp.value = val;
+        updateMoneyPreview();
+      }
+    }
 
-      if (amount <= 0) {
-        alert("Vui lòng nhập số tiền lớn hơn 0!");
+    function updateMoneyPreview() {
+      const cur = parseInt(document.getElementById("moneyCurrentRaw")?.value, 10) || 0;
+      const amt = parseInt(document.getElementById("moneyAmountInput")?.value, 10) || 0;
+      const previewEl = document.getElementById("moneyPreviewVal");
+      if (!previewEl) return;
+
+      let result = 0;
+      if (currentMoneyAction === "add") {
+        result = cur + amt;
+        previewEl.style.color = "#2E7D32";
+        previewEl.innerHTML = `${formatMoney(result)} <small style="color:#2E7D32;font-size:12px;">(+${formatMoney(amt)})</small>`;
+      } else if (currentMoneyAction === "deduct") {
+        result = Math.max(0, cur - amt);
+        previewEl.style.color = "#C92A2A";
+        previewEl.innerHTML = `${formatMoney(result)} <small style="color:#C92A2A;font-size:12px;">(-${formatMoney(amt)})</small>`;
+      } else {
+        result = Math.max(0, amt);
+        previewEl.style.color = "#1971C2";
+        previewEl.innerHTML = `${formatMoney(result)}`;
+      }
+    }
+
+    async function submitMoneyAdjust() {
+      const type = document.getElementById("moneyTargetType").value;
+      const id = document.getElementById("moneyTargetId").value;
+      const code = document.getElementById("moneyStoreCode").value;
+      const amount = parseInt(document.getElementById("moneyAmountInput").value, 10) || 0;
+      const reason = document.getElementById("moneyReasonInput").value.trim();
+      const notify = document.getElementById("moneyNotifyCheck").checked;
+
+      if (amount < 0 || (currentMoneyAction !== "set" && amount === 0)) {
+        alert("Vui lòng nhập số tiền hợp lệ!");
         return;
       }
 
+      const actionText = (currentMoneyAction === "add") ? "CỘNG THÊM" : ((currentMoneyAction === "deduct") ? "TRỪ BỚT" : "CÀI ĐẶT LẠI");
+      if (!confirm(`Bạn có chắc chắn muốn ${actionText} ${formatMoney(amount)} cho ${id}?`)) return;
+
       try {
-        const res = await fetch("/api/admin/gift", {
+        const res = await fetch("/api/admin/money/adjust", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -2178,18 +2286,19 @@
             target_type: type,
             target_id: id,
             store_code: code,
+            action: currentMoneyAction,
             amount,
-            title,
-            message
+            reason,
+            notify_player: notify
           })
         });
         const data = await res.json();
         if (data.ok) {
-          closeGiftModal();
-          showToast("✓ " + (data.message || `Đã tặng thành công ${formatMoney(amount)}!`));
+          closeMoneyModal();
+          showToast("✓ " + (data.message || `Đã cập nhật tiền két thành công!`));
           loadAllData();
         } else {
-          alert("Lỗi: " + (data.error || "Không thể gửi quà tặng"));
+          alert("Lỗi: " + (data.error || "Không thể điều chỉnh tiền"));
         }
       } catch (e) {
         showToast("Lỗi kết nối máy chủ!");
@@ -2243,7 +2352,7 @@
               <td>⭐ ${s.rate || 5.0}</td>
               <td style="font-weight:700; color:${s.profit >= 0 ? '#3E9B4F' : '#C23328'}">${formatMoney(s.profit)}</td>
               <td>
-                <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openGiftModal('shop', '${s.id}', '${escapeHtml(s.name)}')">🎁 Tặng</button>
+                <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openMoneyModal('shop', '${s.id}', '${escapeHtml(s.name)}', ${s.profit || 0})" style="background:#E8F5E9;color:#2E7D32;border:1.5px solid #A5D6A7;font-weight:800;font-size:12px;">💵 Thêm/Trừ Tiền</button>
                 <button class="btn-act btn-edit" onclick="editPlayer('${s.id}', '${escapeHtml(s.name)}', ${s.profit}, ${s.lv})">Sửa</button>
                 <button class="btn-act btn-del" onclick="deletePlayer('${s.id}')">Xóa</button>
               </td>

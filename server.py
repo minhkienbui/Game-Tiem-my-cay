@@ -24,6 +24,7 @@ import time
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime, timedelta
 import hashlib
+import base64
 
 def hash_password(password):
     return hashlib.sha256(("tiemMiCayAuth$" + password).encode("utf-8")).hexdigest()
@@ -353,6 +354,41 @@ def auto_finalize_completed_weeks():
         conn.close()
     except Exception as e:
         print("auto_finalize_completed_weeks error:", e)
+
+def st_hash(A):
+    n = 2166136261
+    for char in A:
+        n ^= ord(char)
+        n = (n * 16777619) & 0xFFFFFFFF
+    chars = "0123456789abcdefghijklmnopqrstuvwxyz"
+    if n == 0:
+        return "0"
+    res = []
+    while n > 0:
+        res.append(chars[n % 36])
+        n //= 36
+    return "".join(reversed(res))
+
+FNV_SALTS = ["mc!7Ay#q", "t0m~yum*"]
+def Fn_sig(A):
+    return st_hash(FNV_SALTS[0] + A).zfill(7) + st_hash(A + FNV_SALTS[1]).zfill(7)
+
+def update_save_data_money(save_data, new_money):
+    if not isinstance(save_data, str) or not save_data.startswith("MC2|"):
+        return save_data
+    try:
+        parts = save_data.split("|")
+        if len(parts) != 3:
+            return save_data
+        dec = base64.b64decode(parts[1]).decode("utf-8")
+        obj = json.loads(dec)
+        obj["money"] = new_money
+        new_json = json.dumps(obj, separators=(",", ":"))
+        new_b64 = base64.b64encode(new_json.encode("utf-8")).decode("ascii")
+        new_sig = Fn_sig(new_json)
+        return f"MC2|{new_b64}|{new_sig}"
+    except Exception:
+        return save_data
 
 def get_today_chal_date():
     now = datetime.now()
@@ -1189,6 +1225,95 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             })
 
                 # POST /api/admin/gift (Admin: Gift Money)
+                # POST /api/admin/money/adjust (Admin: Money Management)
+        if path == "/api/admin/money/adjust":
+            target_type = str(body.get("target_type", "user")).strip()
+            target_id = str(body.get("target_id", "")).strip()
+            action = str(body.get("action", "add")).strip()
+            amount = int(body.get("amount", 0))
+            reason = str(body.get("reason", "")).strip()
+            notify_player = body.get("notify_player", True)
+            now_t = int(time.time())
+
+            if not target_id or amount < 0:
+                return self.send_json({"ok": False, "error": "Vui lòng nhập đối tượng và số tiền hợp lệ!"}, status=400)
+
+            conn = DB()
+            cur = conn
+            old_money = 0
+            new_money = 0
+            display_name = target_id
+            store_code = ""
+
+            if target_type == "user":
+                cur.execute("SELECT id, username, current_money, store_code FROM users WHERE LOWER(username) = ?", (target_id.lower(),))
+                u_row = cur.fetchone()
+                if not u_row:
+                    conn.close()
+                    return self.send_json({"ok": False, "error": "Không tìm thấy tài khoản: " + target_id}, status=404)
+                display_name = u_row[1]
+                old_money = int(u_row[2] or 400000)
+                store_code = u_row[3] or ""
+
+                if action == "add":
+                    new_money = old_money + amount
+                elif action == "deduct":
+                    new_money = max(0, old_money - amount)
+                else:
+                    new_money = max(0, amount)
+
+                cur.execute("UPDATE users SET current_money = ? WHERE LOWER(username) = ?", (new_money, target_id.lower()))
+
+                cur.execute("SELECT save_data FROM user_saves WHERE LOWER(username) = ?", (target_id.lower(),))
+                sv_row = cur.fetchone()
+                if sv_row and sv_row[0]:
+                    upd_save = update_save_data_money(sv_row[0], new_money)
+                    cur.execute("UPDATE user_saves SET save_data = ?, updated_at = ? WHERE LOWER(username) = ?", (upd_save, now_t, target_id.lower()))
+                    if store_code:
+                        cur.execute("UPDATE cloud_saves SET save_data = ?, created_at = ? WHERE UPPER(code) = ?", (upd_save, now_t, store_code.upper()))
+
+                if notify_player:
+                    diff = new_money - old_money
+                    if diff != 0:
+                        is_add = diff > 0
+                        title = "🎁 Cộng Tiền Vào Két Từ Admin" if is_add else "🏛️ Khấu Trừ Tiền Két Từ Admin"
+                        default_msg = f"Admin đã cộng +{diff:,}đ vào két quán của bạn!" if is_add else f"Admin đã trừ -{abs(diff):,}đ khỏi két quán của bạn."
+                        msg = (default_msg + " Lý do: " + reason) if reason else default_msg
+                        cur.execute("""
+                            INSERT INTO admin_gifts (target_type, target_id, target_name, store_code, amount, title, message, claimed, created_at)
+                            VALUES ('user', ?, ?, ?, ?, ?, ?, 0, ?)
+                        """, (target_id, display_name, store_code, diff, title, msg, now_t))
+
+            else: # shop
+                cur.execute("SELECT id, name, profit FROM leaderboard WHERE id = ?", (target_id,))
+                s_row = cur.fetchone()
+                if not s_row:
+                    conn.close()
+                    return self.send_json({"ok": False, "error": "Không tìm thấy quán mì: " + target_id}, status=404)
+                display_name = s_row[1] or target_id
+                old_money = int(s_row[2] or 0)
+
+                if action == "add":
+                    new_money = old_money + amount
+                elif action == "deduct":
+                    new_money = max(0, old_money - amount)
+                else:
+                    new_money = max(0, amount)
+
+                cur.execute("UPDATE leaderboard SET profit = ?, updated_at = ? WHERE id = ?", (new_money, now_t, target_id))
+
+            conn.commit()
+            conn.close()
+            return self.send_json({
+                "ok": True,
+                "action": action,
+                "old_money": old_money,
+                "new_money": new_money,
+                "target_id": target_id,
+                "display_name": display_name,
+                "message": f"Đã cập nhật tiền két cho {display_name} thành {new_money:,}đ!"
+            })
+
         if path == "/api/admin/gift":
             target_type = str(body.get("target_type", "user")).strip()
             target_id = str(body.get("target_id", "")).strip()
@@ -1228,14 +1353,23 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         # POST /api/user/gift/claim
         if path == "/api/user/gift/claim":
             gift_id = int(body.get("id", 0))
+            username = str(body.get("username", "")).strip().lower()
+            shop_id = str(body.get("shop_id", "")).strip()
+            store_code = str(body.get("store_code", "")).strip().upper()
+
+            conn = DB()
+            cur = conn
             if gift_id:
-                conn = DB()
-                cur = conn
                 cur.execute("UPDATE admin_gifts SET claimed = 1 WHERE id = ?", (gift_id,))
-                conn.commit()
-                conn.close()
-                return self.send_json({"ok": True, "claimed_id": gift_id})
-            return self.send_json({"ok": False, "error": "Missing gift id"}, status=400)
+            if username:
+                cur.execute("UPDATE admin_gifts SET claimed = 1 WHERE target_type = 'user' AND LOWER(target_id) = ?", (username,))
+            if shop_id and shop_id != "guest":
+                cur.execute("UPDATE admin_gifts SET claimed = 1 WHERE target_type = 'shop' AND target_id = ?", (shop_id,))
+            if store_code:
+                cur.execute("UPDATE admin_gifts SET claimed = 1 WHERE target_type = 'code' AND UPPER(store_code) = ?", (store_code,))
+            conn.commit()
+            conn.close()
+            return self.send_json({"ok": True, "claimed_id": gift_id})
 
         if path == "/api/auth/register":
             username = str(body.get("username", "")).strip().lower()

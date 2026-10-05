@@ -114,6 +114,37 @@ let lbCache = { data: null, time: 0 };
 let chalGlobalCache = { data: null, time: 0 };
 let lastAutoFinalizeTime = 0;
 
+function stHash(A) {
+  let n = 2166136261;
+  for (let t = 0; t < A.length; t++) {
+    n ^= A.charCodeAt(t);
+    n = Math.imul(n, 16777619);
+  }
+  return (n >>> 0).toString(36);
+}
+
+const SALT_KEYS = ["mc!7Ay#q", "t0m~yum*"];
+function fnvSignature(A) {
+  return stHash(SALT_KEYS[0] + A).padStart(7, "0") + stHash(A + SALT_KEYS[1]).padStart(7, "0");
+}
+
+function updateSaveDataMoney(saveData, newMoney) {
+  if (typeof saveData !== "string" || !saveData.startsWith("MC2|")) return saveData;
+  try {
+    const parts = saveData.split("|");
+    if (parts.length !== 3) return saveData;
+    const jsonStr = Buffer.from(parts[1], "base64").toString("utf8");
+    const state = JSON.parse(jsonStr);
+    state.money = newMoney;
+    const newJson = JSON.stringify(state);
+    const newB64 = Buffer.from(newJson, "utf8").toString("base64");
+    const newSig = fnvSignature(newJson);
+    return "MC2|" + newB64 + "|" + newSig;
+  } catch (e) {
+    return saveData;
+  }
+}
+
 function getTodayChalDate() {
   const now = new Date();
   return `${now.getDate()}/${now.getMonth() + 1}`;
@@ -276,20 +307,24 @@ module.exports = async (req, res) => {
         return res.json({ ok: true, config: cfg, updated_at: lastUpdated });
       }
 
-      // GET /api/user/gifts (Check for Unclaimed Admin Gifts)
+      // GET /api/user/gifts (Check for Unclaimed Admin Gifts - Strict Filtering)
       if (path === "/api/user/gifts") {
         const shopId = (urlObj.searchParams.get("id") || "").trim();
         const username = (urlObj.searchParams.get("username") || "").trim().toLowerCase();
         const storeCode = (urlObj.searchParams.get("code") || "").trim().toUpperCase();
 
+        // If all parameters are empty, return empty immediately
+        if (!username && !storeCode && (!shopId || shopId === "guest")) {
+          return res.json({ ok: true, gifts: [] });
+        }
+
         const rows = await sql`
           SELECT id, target_type, target_id, target_name, amount, title, message, created_at
           FROM admin_gifts
           WHERE claimed = 0 AND (
-            (target_type = 'user' AND LOWER(target_id) = ${username}) OR
-            (target_type = 'code' AND UPPER(store_code) = ${storeCode}) OR
-            (target_type = 'shop' AND target_id = ${shopId}) OR
-            (target_type = 'all')
+            (${username.length > 0} AND target_type = 'user' AND LOWER(target_id) = ${username}) OR
+            (${storeCode.length > 0} AND target_type = 'code' AND UPPER(store_code) = ${storeCode}) OR
+            (${shopId.length > 0 && shopId !== 'guest'} AND target_type = 'shop' AND target_id = ${shopId})
           )
           ORDER BY created_at ASC
           LIMIT 5
@@ -1015,6 +1050,121 @@ module.exports = async (req, res) => {
         return res.status(400).json({ ok: false, error: "Missing message id" });
       }
 
+      // POST /api/admin/money/adjust (Admin: Full Management of Player / Shop Funds)
+      if (path === "/api/admin/money/adjust") {
+        const targetType = String(body.target_type || "user").trim(); // 'user' or 'shop'
+        const targetId = String(body.target_id || "").trim();
+        const action = String(body.action || "add").trim(); // 'add', 'deduct', 'set'
+        const amount = parseInt(body.amount, 10) || 0;
+        const reason = String(body.reason || "").trim();
+        const notifyPlayer = body.notify_player !== false;
+        const nowT = Math.floor(Date.now() / 1000);
+
+        if (!targetId || amount < 0) {
+          return res.status(400).json({ ok: false, error: "Vui lòng chọn đối tượng và số tiền hợp lệ!" });
+        }
+
+        let oldMoney = 0;
+        let newMoney = 0;
+        let displayName = targetId;
+        let storeCode = "";
+
+        if (targetType === "user") {
+          const uRows = await sql`SELECT id, username, current_money, store_code FROM users WHERE LOWER(username) = ${targetId.toLowerCase()}`;
+          if (!uRows.length) {
+            return res.status(404).json({ ok: false, error: "Không tìm thấy tài khoản: " + targetId });
+          }
+          displayName = uRows[0].username;
+          storeCode = uRows[0].store_code || "";
+          oldMoney = Number(uRows[0].current_money || 400000);
+
+          if (action === "add") {
+            newMoney = oldMoney + amount;
+          } else if (action === "deduct") {
+            newMoney = Math.max(0, oldMoney - amount);
+          } else { // 'set'
+            newMoney = Math.max(0, amount);
+          }
+
+          // Update users table
+          await sql`
+            UPDATE users
+            SET current_money = ${newMoney}
+            WHERE LOWER(username) = ${targetId.toLowerCase()}
+          `;
+
+          // Update user_saves table if exists
+          try {
+            const saveRows = await sql`SELECT save_data FROM user_saves WHERE LOWER(username) = ${targetId.toLowerCase()}`;
+            if (saveRows.length && saveRows[0].save_data) {
+              const updatedSave = updateSaveDataMoney(saveRows[0].save_data, newMoney);
+              await sql`
+                UPDATE user_saves
+                SET save_data = ${updatedSave}, updated_at = ${nowT}
+                WHERE LOWER(username) = ${targetId.toLowerCase()}
+              `;
+              if (storeCode) {
+                await sql`
+                  UPDATE cloud_saves
+                  SET save_data = ${updatedSave}, created_at = ${nowT}
+                  WHERE UPPER(code) = ${storeCode.toUpperCase()}
+                `;
+              }
+            }
+          } catch (e) {}
+
+          // Insert notification event for user if notifyPlayer is true
+          if (notifyPlayer) {
+            const diff = newMoney - oldMoney;
+            if (diff !== 0) {
+              const isAdd = diff > 0;
+              const title = isAdd ? "🎁 Cộng Tiền Vào Két Từ Admin" : "🏛️ Khấu Trừ Tiền Két Từ Admin";
+              const defaultMsg = isAdd
+                ? `Admin đã cộng +${diff.toLocaleString('vi-VN')}đ vào két quán của bạn!`
+                : `Admin đã trừ -${Math.abs(diff).toLocaleString('vi-VN')}đ khỏi két quán của bạn.`;
+              const msg = reason ? (defaultMsg + " Lý do: " + reason) : defaultMsg;
+
+              await sql`
+                INSERT INTO admin_gifts (target_type, target_id, target_name, store_code, amount, title, message, claimed, created_at)
+                VALUES ('user', ${targetId}, ${displayName}, ${storeCode}, ${diff}, ${title}, ${msg}, 0, ${nowT})
+              `;
+            }
+          }
+
+        } else { // 'shop'
+          const sRows = await sql`SELECT id, name, profit FROM leaderboard WHERE id = ${targetId}`;
+          if (!sRows.length) {
+            return res.status(404).json({ ok: false, error: "Không tìm thấy quán mì: " + targetId });
+          }
+          displayName = sRows[0].name || targetId;
+          oldMoney = Number(sRows[0].profit || 0);
+
+          if (action === "add") {
+            newMoney = oldMoney + amount;
+          } else if (action === "deduct") {
+            newMoney = Math.max(0, oldMoney - amount);
+          } else { // 'set'
+            newMoney = Math.max(0, amount);
+          }
+
+          await sql`
+            UPDATE leaderboard
+            SET profit = ${newMoney}, updated_at = ${nowT}
+            WHERE id = ${targetId}
+          `;
+        }
+
+        return res.json({
+          ok: true,
+          action,
+          old_money: oldMoney,
+          new_money: newMoney,
+          target_id: targetId,
+          display_name: displayName,
+          message: `Đã cập nhật tiền két cho ${displayName} thành ${newMoney.toLocaleString('vi-VN')}đ!`
+        });
+      }
+
       // POST /api/admin/gift (Admin: Gift Money to User or Shop)
       if (path === "/api/admin/gift") {
         const targetType = String(body.target_type || "user").trim(); // 'user' or 'shop'
@@ -1055,14 +1205,26 @@ module.exports = async (req, res) => {
         });
       }
 
-      // POST /api/user/gift/claim (User: Claim Admin Gift)
+      // POST /api/user/gift/claim (User: Claim Admin Gift - One-time Permanent)
       if (path === "/api/user/gift/claim") {
         const giftId = parseInt(body.id, 10);
+        const username = String(body.username || "").trim().toLowerCase();
+        const shopId = String(body.shop_id || "").trim();
+        const storeCode = String(body.store_code || "").trim().toUpperCase();
+
         if (giftId) {
           await sql`UPDATE admin_gifts SET claimed = 1 WHERE id = ${giftId}`;
-          return res.json({ ok: true, claimed_id: giftId });
         }
-        return res.status(400).json({ ok: false, error: "Missing gift id" });
+        if (username) {
+          await sql`UPDATE admin_gifts SET claimed = 1 WHERE target_type = 'user' AND LOWER(target_id) = ${username}`;
+        }
+        if (shopId && shopId !== "guest") {
+          await sql`UPDATE admin_gifts SET claimed = 1 WHERE target_type = 'shop' AND target_id = ${shopId}`;
+        }
+        if (storeCode) {
+          await sql`UPDATE admin_gifts SET claimed = 1 WHERE target_type = 'code' AND UPPER(store_code) = ${storeCode}`;
+        }
+        return res.json({ ok: true, claimed_id: giftId });
       }
 
       // 1. POST /api/auth/register
