@@ -166,7 +166,12 @@ module.exports = async (req, res) => {
         message TEXT,
         claimed INT DEFAULT 0,
         created_at BIGINT
-      );
+      )
+    `;
+  } catch (e) {}
+
+  try {
+    await sql`
       CREATE TABLE IF NOT EXISTS chat_messages (
         id SERIAL PRIMARY KEY,
         conversation_id TEXT,
