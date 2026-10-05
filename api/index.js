@@ -1266,7 +1266,8 @@ module.exports = async (req, res) => {
         const lost = parseInt(body.lost, 10) || 0;
 
         const tokRows = await sql`SELECT id FROM challenge_tokens WHERE token = ${token}`;
-        const shopId = tokRows[0]?.id || "guest";
+        const shopId = tokRows[0]?.id || body.id || "guest";
+        const shopName = String(body.name || "").trim().slice(0, 26);
 
         chalGlobalCache.time = 0;
         await sql`
