@@ -1030,6 +1030,63 @@
     </div>
   </main>
 
+  <!-- MODAL: TẶNG TIỀN CHO QUÁN MÌ / NGƯỜI CHƠI -->
+  <div id="adminGiftModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99998;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+    <div style="background:#FFF;border-radius:18px;max-width:440px;width:100%;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,0.35);text-align:left;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 style="margin:0;color:#C62828;font-size:18px;display:flex;align-items:center;gap:6px;">
+          <span>🎁</span> Tặng Tiền Cho Quán Mì
+        </h3>
+        <button type="button" onclick="closeGiftModal()" style="border:none;background:#F1F3F5;color:#555;width:28px;height:28px;border-radius:50%;cursor:pointer;font-weight:800;font-size:14px;">✕</button>
+      </div>
+
+      <div style="background:#FFF9EB;border:1px solid #FCD34D;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400E;">
+        Đang tặng quà cho: <b id="giftTargetDisplay" style="color:#C62828;font-size:14px;">Tài khoản</b>
+      </div>
+
+      <form onsubmit="event.preventDefault(); submitAdminGift();">
+        <input type="hidden" id="giftTargetType" value="user">
+        <input type="hidden" id="giftTargetId" value="">
+        <input type="hidden" id="giftStoreCode" value="">
+
+        <!-- PRESET QUICK AMOUNT CHIPS -->
+        <div style="margin-bottom:14px;">
+          <label style="font-size:12.5px;font-weight:700;color:var(--text);display:block;margin-bottom:6px;">Chọn nhanh mức tiền thưởng:</label>
+          <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:6px;">
+            <button type="button" class="btn-act" onclick="setGiftAmount(50000)" style="font-weight:700;">+50.000đ</button>
+            <button type="button" class="btn-act" onclick="setGiftAmount(100000)" style="font-weight:700;">+100.000đ</button>
+            <button type="button" class="btn-act" onclick="setGiftAmount(200000)" style="font-weight:700;">+200.000đ</button>
+            <button type="button" class="btn-act" onclick="setGiftAmount(500000)" style="font-weight:700;background:#FFF3D6;color:#B45309;">+500.000đ</button>
+            <button type="button" class="btn-act" onclick="setGiftAmount(1000000)" style="font-weight:700;background:#E8F5E9;color:#2E7D32;">+1.000.000đ</button>
+            <button type="button" class="btn-act" onclick="setGiftAmount(5000000)" style="font-weight:700;background:#E3F2FD;color:#1565C0;">+5.000.000đ</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="giftAmountInput">Số tiền muốn tặng (VNĐ): <span style="color:#C62828;">*</span></label>
+          <input type="number" id="giftAmountInput" placeholder="VD: 500000" min="10000" step="10000" required style="font-size:16px;font-weight:800;color:#2E7D32;">
+        </div>
+
+        <div class="form-group">
+          <label for="giftTitleInput">Tiêu đề phần quà:</label>
+          <input type="text" id="giftTitleInput" value="🎁 Quà Tặng Từ Ban Quản Trị" maxlength="60">
+        </div>
+
+        <div class="form-group">
+          <label for="giftMessageInput">Lời nhắn gửi kèm:</label>
+          <input type="text" id="giftMessageInput" value="Admin gửi tặng vốn kinh doanh, chúc quán bạn buôn may bán đắt!" maxlength="150">
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:18px;">
+          <button type="button" class="btn-act" onclick="closeGiftModal()" style="flex:1;padding:11px;">Hủy Bỏ</button>
+          <button type="submit" class="btn-primary" style="flex:2;padding:11px;font-size:14px;justify-content:center;background:#2E7D32;">
+            <span>🚀 Gửi Tặng Tiền Ngay</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TOAST NOTIFICATION -->
   <div id="admToast"></div>
 
@@ -1623,6 +1680,7 @@
             <div style="display:flex;gap:4px;flex-wrap:wrap;">
               ${u.has_save ? `<button class="btn-act btn-edit" onclick="viewUserSave('${escapeHtml(u.username)}')">👁️ Save</button>` : ''}
               ${u.store_code ? `<button class="btn-act" style="background:#E8F5E9;color:#2E7D32;" onclick="adminReceiveStoreToTest('${escapeHtml(u.store_code)}')">🎮 Test</button>` : ''}
+              <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openGiftModal('user', '${escapeHtml(u.username)}', '${escapeHtml(u.username)}', '${escapeHtml(u.store_code || '')}')">🎁 Tặng Tiền</button>
               <button class="btn-act" onclick="resetUserPassword('${escapeHtml(u.username)}')">🔑 Pass</button>
               <button class="btn-act btn-del" onclick="deleteUser('${escapeHtml(u.username)}')">🗑️</button>
             </div>
@@ -2068,6 +2126,76 @@
       }
     }
 
+    // --- ADMIN GIFT MONEY FUNCTIONS ---
+    function openGiftModal(type, id, name, code = '') {
+      const modal = document.getElementById("adminGiftModal");
+      if (!modal) return;
+      document.getElementById("giftTargetType").value = type;
+      document.getElementById("giftTargetId").value = id;
+      document.getElementById("giftStoreCode").value = code;
+
+      const displayEl = document.getElementById("giftTargetDisplay");
+      if (displayEl) {
+        displayEl.innerHTML = `${escapeHtml(name)} <small style="color:#888;">(${type === 'user' ? 'Tài khoản' : 'Mã quán'}: ${escapeHtml(id)}${code ? ` · Mã tiệm: ${escapeHtml(code)}` : ''})</small>`;
+      }
+
+      document.getElementById("giftAmountInput").value = "500000";
+      modal.style.display = "flex";
+      setTimeout(() => document.getElementById("giftAmountInput")?.focus(), 50);
+    }
+
+    function closeGiftModal() {
+      const modal = document.getElementById("adminGiftModal");
+      if (modal) modal.style.display = "none";
+    }
+
+    function setGiftAmount(val) {
+      const inp = document.getElementById("giftAmountInput");
+      if (inp) inp.value = val;
+    }
+
+    async function submitAdminGift() {
+      const type = document.getElementById("giftTargetType").value;
+      const id = document.getElementById("giftTargetId").value;
+      const code = document.getElementById("giftStoreCode").value;
+      const amount = parseInt(document.getElementById("giftAmountInput").value, 10) || 0;
+      const title = document.getElementById("giftTitleInput").value.trim();
+      const message = document.getElementById("giftMessageInput").value.trim();
+
+      if (amount <= 0) {
+        alert("Vui lòng nhập số tiền lớn hơn 0!");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/gift", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Code": getAdminAuthCode() || "09659"
+          },
+          body: JSON.stringify({
+            target_type: type,
+            target_id: id,
+            store_code: code,
+            amount,
+            title,
+            message
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          closeGiftModal();
+          showToast("✓ " + (data.message || `Đã tặng thành công ${formatMoney(amount)}!`));
+          loadAllData();
+        } else {
+          alert("Lỗi: " + (data.error || "Không thể gửi quà tặng"));
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
     async function loadAllData() {
       try {
         // 1. Load Leaderboard
@@ -2115,6 +2243,7 @@
               <td>⭐ ${s.rate || 5.0}</td>
               <td style="font-weight:700; color:${s.profit >= 0 ? '#3E9B4F' : '#C23328'}">${formatMoney(s.profit)}</td>
               <td>
+                <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openGiftModal('shop', '${s.id}', '${escapeHtml(s.name)}')">🎁 Tặng</button>
                 <button class="btn-act btn-edit" onclick="editPlayer('${s.id}', '${escapeHtml(s.name)}', ${s.profit}, ${s.lv})">Sửa</button>
                 <button class="btn-act btn-del" onclick="deletePlayer('${s.id}')">Xóa</button>
               </td>

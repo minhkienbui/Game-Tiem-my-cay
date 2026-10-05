@@ -155,6 +155,18 @@ module.exports = async (req, res) => {
   // Auto-migration: ensure game_config table exists
   try {
     await sql`
+      CREATE TABLE IF NOT EXISTS admin_gifts (
+        id SERIAL PRIMARY KEY,
+        target_type TEXT,
+        target_id TEXT,
+        target_name TEXT,
+        store_code TEXT,
+        amount BIGINT,
+        title TEXT,
+        message TEXT,
+        claimed INT DEFAULT 0,
+        created_at BIGINT
+      );
       CREATE TABLE IF NOT EXISTS chat_messages (
         id SERIAL PRIMARY KEY,
         conversation_id TEXT,
@@ -257,6 +269,39 @@ module.exports = async (req, res) => {
           }
         } catch (e) {}
         return res.json({ ok: true, config: cfg, updated_at: lastUpdated });
+      }
+
+      // GET /api/user/gifts (Check for Unclaimed Admin Gifts)
+      if (path === "/api/user/gifts") {
+        const shopId = (urlObj.searchParams.get("id") || "").trim();
+        const username = (urlObj.searchParams.get("username") || "").trim().toLowerCase();
+        const storeCode = (urlObj.searchParams.get("code") || "").trim().toUpperCase();
+
+        const rows = await sql`
+          SELECT id, target_type, target_id, target_name, amount, title, message, created_at
+          FROM admin_gifts
+          WHERE claimed = 0 AND (
+            (target_type = 'user' AND LOWER(target_id) = ${username}) OR
+            (target_type = 'code' AND UPPER(store_code) = ${storeCode}) OR
+            (target_type = 'shop' AND target_id = ${shopId}) OR
+            (target_type = 'all')
+          )
+          ORDER BY created_at ASC
+          LIMIT 5
+        `;
+
+        return res.json({
+          ok: true,
+          gifts: rows.map(r => ({
+            id: r.id,
+            target_type: r.target_type,
+            target_name: r.target_name,
+            amount: Number(r.amount),
+            title: r.title,
+            message: r.message,
+            created_at: Number(r.created_at)
+          }))
+        });
       }
 
       // 1. GET /api/lb (Cached & Blazing Fast)
@@ -965,6 +1010,56 @@ module.exports = async (req, res) => {
         return res.status(400).json({ ok: false, error: "Missing message id" });
       }
 
+      // POST /api/admin/gift (Admin: Gift Money to User or Shop)
+      if (path === "/api/admin/gift") {
+        const targetType = String(body.target_type || "user").trim(); // 'user' or 'shop'
+        const targetId = String(body.target_id || "").trim();
+        const targetName = String(body.target_name || targetId).trim();
+        const storeCode = String(body.store_code || "").trim().toUpperCase();
+        const amount = parseInt(body.amount, 10) || 0;
+        const title = String(body.title || "🎁 Quà Tặng Từ Ban Quản Trị").trim();
+        const message = String(body.message || "Chúc quán bạn kinh doanh phát đạt!").trim();
+        const nowT = Math.floor(Date.now() / 1000);
+
+        if (!targetId || amount <= 0) {
+          return res.status(400).json({ ok: false, error: "Vui lòng nhập đối tượng và số tiền hợp lệ!" });
+        }
+
+        await sql`
+          INSERT INTO admin_gifts (target_type, target_id, target_name, store_code, amount, title, message, claimed, created_at)
+          VALUES (${targetType}, ${targetId}, ${targetName}, ${storeCode}, ${amount}, ${title}, ${message}, 0, ${nowT})
+        `;
+
+        if (targetType === "user") {
+          await sql`
+            UPDATE users
+            SET current_money = COALESCE(current_money, 400000) + ${amount}
+            WHERE LOWER(username) = ${targetId.toLowerCase()}
+          `;
+        } else if (targetType === "shop") {
+          await sql`
+            UPDATE leaderboard
+            SET profit = COALESCE(profit, 0) + ${amount}
+            WHERE id = ${targetId}
+          `;
+        }
+
+        return res.json({
+          ok: true,
+          message: `Đã gửi tặng thành công ${amount.toLocaleString('vi-VN')}đ cho ${targetName}!`
+        });
+      }
+
+      // POST /api/user/gift/claim (User: Claim Admin Gift)
+      if (path === "/api/user/gift/claim") {
+        const giftId = parseInt(body.id, 10);
+        if (giftId) {
+          await sql`UPDATE admin_gifts SET claimed = 1 WHERE id = ${giftId}`;
+          return res.json({ ok: true, claimed_id: giftId });
+        }
+        return res.status(400).json({ ok: false, error: "Missing gift id" });
+      }
+
       // 1. POST /api/auth/register
       if (path === "/api/auth/register") {
         const username = String(body.username || "").trim().toLowerCase();
@@ -1168,17 +1263,37 @@ module.exports = async (req, res) => {
         const tokRows = await sql`SELECT id FROM challenge_tokens WHERE token = ${token}`;
         const shopId = tokRows[0]?.id || "guest";
 
+        chalGlobalCache.time = 0;
         await sql`
-          chalGlobalCache.time = 0;
-        INSERT INTO challenges (id, day, score, served, perfect, wrong, lost, created_at)
+          INSERT INTO challenges (id, day, score, served, perfect, wrong, lost, created_at)
           VALUES (${shopId}, ${chalDay}, ${score}, ${served}, ${perfect}, ${wrong}, ${lost}, ${nowT})
         `;
+
+        if (shopName && shopId !== "guest") {
+          try {
+            await sql`
+              INSERT INTO leaderboard (id, name, updated_at)
+              VALUES (${shopId}, ${shopName}, ${nowT})
+              ON CONFLICT(id) DO UPDATE SET name = EXCLUDED.name, updated_at = EXCLUDED.updated_at
+            `;
+          } catch (e) {}
+        }
 
         const rankRows = await sql`SELECT count(DISTINCT id) as cnt FROM challenges WHERE day = ${chalDay} AND score > ${score}`;
         const rank = Number(rankRows[0]?.cnt || 0) + 1;
         const totalRows = await sql`SELECT count(DISTINCT id) as cnt FROM challenges WHERE day = ${chalDay}`;
+        const bestRows = await sql`SELECT MAX(score) as best FROM challenges WHERE day = ${chalDay} AND id = ${shopId}`;
+        const best = Number(bestRows[0]?.best || score);
+        const countRoundsRows = await sql`SELECT count(*) as cnt FROM challenges WHERE day = ${chalDay} AND id = ${shopId}`;
+        const left = Math.max(0, 3 - Number(countRoundsRows[0]?.cnt || 0));
 
-        return res.json({ rank, total: Math.max(1, Number(totalRows[0]?.cnt || 1)) });
+        return res.json({
+          ok: true,
+          rank,
+          total: Math.max(1, Number(totalRows[0]?.cnt || 1)),
+          best,
+          left
+        });
       }
 
       // 6. POST /api/sync (Permanent Store Code / Save Sync)

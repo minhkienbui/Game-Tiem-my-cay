@@ -138,6 +138,20 @@ def init_db():
             )
         """)
         db.execute(f"""
+            CREATE TABLE IF NOT EXISTS admin_gifts (
+                id {auto_id_type} PRIMARY KEY {auto_inc},
+                target_type TEXT,
+                target_id TEXT,
+                target_name TEXT,
+                store_code TEXT,
+                amount BIGINT,
+                title TEXT,
+                message TEXT,
+                claimed INT DEFAULT 0,
+                created_at BIGINT
+            )
+        """)
+        db.execute(f"""
             CREATE TABLE IF NOT EXISTS chat_messages (
                 id {auto_id_type} PRIMARY KEY {auto_inc},
                 conversation_id TEXT,
@@ -461,6 +475,35 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             return self.send_json(res)
 
         # 1. GET /api/lb (Leaderboard)
+                # GET /api/user/gifts
+        if path == "/api/user/gifts":
+            shop_id = params.get("id", [""])[0].strip()
+            username = params.get("username", [""])[0].strip().lower()
+            store_code = params.get("code", [""])[0].strip().upper()
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                SELECT id, target_type, target_id, target_name, amount, title, message, created_at
+                FROM admin_gifts
+                WHERE claimed = 0 AND (
+                    (target_type = 'user' AND LOWER(target_id) = ?) OR
+                    (target_type = 'code' AND UPPER(store_code) = ?) OR
+                    (target_type = 'shop' AND target_id = ?) OR
+                    (target_type = 'all')
+                )
+                ORDER BY created_at ASC
+                LIMIT 5
+            """, (username, store_code, shop_id))
+            rows = cur.fetchall()
+            conn.close()
+            gifts = []
+            for r in rows:
+                gifts.append({
+                    "id": r[0], "target_type": r[1], "target_id": r[2], "target_name": r[3],
+                    "amount": r[4], "title": r[5], "message": r[6], "created_at": r[7]
+                })
+            return self.send_json({"ok": True, "gifts": gifts})
+
         if path == "/api/lb":
             conn = DB()
             cur = conn
@@ -1145,6 +1188,55 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 "updated_at": now_t
             })
 
+                # POST /api/admin/gift (Admin: Gift Money)
+        if path == "/api/admin/gift":
+            target_type = str(body.get("target_type", "user")).strip()
+            target_id = str(body.get("target_id", "")).strip()
+            target_name = str(body.get("target_name") or target_id).strip()
+            store_code = str(body.get("store_code", "")).strip().upper()
+            amount = int(body.get("amount", 0))
+            title = str(body.get("title", "🎁 Quà Tặng Từ Ban Quản Trị")).strip()
+            message = str(body.get("message", "Chúc quán bạn kinh doanh phát đạt!")).strip()
+            now_t = int(time.time())
+
+            if not target_id or amount <= 0:
+                return self.send_json({"ok": False, "error": "Vui lòng nhập đối tượng và số tiền hợp lệ!"}, status=400)
+
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                INSERT INTO admin_gifts (target_type, target_id, target_name, store_code, amount, title, message, claimed, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+            """, (target_type, target_id, target_name, store_code, amount, title, message, now_t))
+
+            if target_type == "user":
+                cur.execute("""
+                    UPDATE users SET current_money = COALESCE(current_money, 400000) + ? WHERE LOWER(username) = ?
+                """, (amount, target_id.lower()))
+            elif target_type == "shop":
+                cur.execute("""
+                    UPDATE leaderboard SET profit = COALESCE(profit, 0) + ? WHERE id = ?
+                """, (amount, target_id))
+
+            conn.commit()
+            conn.close()
+            return self.send_json({
+                "ok": True,
+                "message": f"Đã gửi tặng thành công {amount:,}đ cho {target_name}!"
+            })
+
+        # POST /api/user/gift/claim
+        if path == "/api/user/gift/claim":
+            gift_id = int(body.get("id", 0))
+            if gift_id:
+                conn = DB()
+                cur = conn
+                cur.execute("UPDATE admin_gifts SET claimed = 1 WHERE id = ?", (gift_id,))
+                conn.commit()
+                conn.close()
+                return self.send_json({"ok": True, "claimed_id": gift_id})
+            return self.send_json({"ok": False, "error": "Missing gift id"}, status=400)
+
         if path == "/api/auth/register":
             username = str(body.get("username", "")).strip().lower()
             password = str(body.get("password", ""))
@@ -1379,10 +1471,19 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             total = cur.fetchone()[0]
             conn.close()
 
-            # Flat response for submit
+            cur.execute('SELECT MAX(score) FROM challenges WHERE day = ? AND id = ?', (chal_day, shop_id))
+            best = cur.fetchone()[0] or score
+            cur.execute('SELECT COUNT(*) FROM challenges WHERE day = ? AND id = ?', (chal_day, shop_id))
+            rounds_done = cur.fetchone()[0] or 0
+            left = max(0, 3 - rounds_done)
+            conn.close()
+
             return self.send_json({
+                "ok": True,
                 "rank": rank,
-                "total": max(1, total)
+                "total": max(1, total),
+                "best": best,
+                "left": left
             })
 
         # 3. POST /api/sync (Upload save state to cloud)

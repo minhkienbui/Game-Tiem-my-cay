@@ -50,7 +50,8 @@ function Bn(){const n=document.documentElement;n.classList.remove("dark");try{lo
     <div class="pr"><nav class="tabs" role="tablist">${zs.map(t=>`<button class="tab ${i.tab===t[0]?"on":""}" role="tab" aria-selected="${i.tab===t[0]}" data-tab="${t[0]}">${Qs[t[0]]||""}<span>${t[1]}</span>${t[0]==="danhgia"&&Cn()?`<i class="bdg" aria-label="${Cn()} đánh giá chờ trả lời">${Cn()}</i>`:""}</button>`).join("")}</nav>
     <div class="tabbody" id="tabbody"></div></div>
     <div class="dock"><button class="big" id="mainBtn"></button><p class="dockNote" id="dockNote"></p></div>`,d("view").scrollTop=0,pA(),Re(),WA()}function WA(){if(!La()){ei(()=>WA());return}
-  checkUnclaimedTournamentReward();if(o.gift){const n=o.gift;o.gift=null,o.money+=n.v,o.cur.gift=(o.cur.gift||0)+n.v,z(),C("star"),X(`<h2>${V(n.n)}</h2><p>${V(n.d)}</p><p class="lvup">+${y(n.v)} vào két</p>`,[["Tuyệt",()=>{xA(),Yt({x:innerWidth/2,y:innerHeight/2},8,0),kn(),WA()},1]]);return}if(o.debts&&o.debts.length){const n=o.debts.shift();if(tA(.75)){const t=T([0,5e3,1e4]);S("Khách trả nợ",n.v+t),z(),C("star"),X(`<div class="drama"><div class="dface">${wA(n.f,"happy")}</div><span class="dtag">Trả nợ</span><h2>${V(n.n)} quay lại trả nợ</h2><p>“Hôm qua cảm ơn quán nha!” ${V(n.n)} trả ${y(n.v)}${t?`, gửi thêm ${y(t)} cảm ơn`:""}.</p></div>`,[["Tuyệt",()=>{Yt({x:innerWidth/2,y:innerHeight/2},6,0),kn(),WA()},1]])}else z(),X(`<div class="drama"><div class="dface">${wA(n.f,"ok")}</div><span class="dtag">Ghi nợ</span><h2>${V(n.n)} chưa quay lại</h2><p>Khoản ghi nợ ${y(n.v)} hôm qua coi như mất. Lần sau cân nhắc kỹ hơn nha.</p></div>`,[["Đành vậy",()=>WA(),1]]);return}if(o.lvNew){const n=o.lvNew,t=Ce(n);o.lvNew=0,z(),sn(40),X(`${yA("happy","cardM")}<h2>Lên cấp ${n}!</h2><p>Quán giờ là <b>${en(n)}</b>.</p>${n===3?'<p class="lvup">Từ cấp 3 bếp không còn hiện gợi ý từng bước nữa, tự nhớ cách nấu nha!</p>':""}${t.length?`<p class="lvup">Mở khóa được: ${t.join(", ")}.</p>`:""}`,[["Xem trong Nâng cấp",()=>{i.tab="nangcap",pA(),WA()},1],["Để sau",()=>WA()]]);return}if((o.news||0)<bt&&o.day>1){const n=o.news||0,t=n<4;o.news=bt,z(),X(`${yA("happy","cardM")}<h2>Tiệm có gì mới?</h2><ul class="news"><li><b>Chuyển tiệm sang máy khác</b>: đổi điện thoại hay mở game bằng trình duyệt khác (Safari, Chrome, trong app TikTok, Facebook) thì ở máy cũ vào Cài đặt, chọn <b>Chuyển sang máy khác</b> để lấy mã 8 ký tự, rồi nhập mã ở máy mới. Không phải chép mã dài nữa.</li>${n<6?"<li><b>Rửa tô cuối ngày</b>: đóng cửa xong, ở thẻ tổng kết bấm <b>Rửa tô</b> rồi vuốt qua lại cho tô sạch trong 15 giây. Tô sạch cất lại vào kho, mai đỡ tiền mua tô. Không thích thì bỏ qua.</li><li><b>Nước lẩu bí truyền</b> trong tab Kho (từ ngày 3): nhớ đúng thứ tự thả gia vị theo công thức của tuần. Nấu đúng thì hôm đó khách gọi nồi ấy chấm thêm sao, tip thêm.</li><li><b>Đơn giao xa</b>: quán đã lên app thì thỉnh thoảng có đơn tài xế không nhận. Tự chạy xe máy né ổ gà, vũng nước để được tip, hoặc thuê ship ngoài.</li>":""}${n<5?"<li><b>Tự bóp sốt ớt</b>: phụ bếp gắp topping với nêm nếm giỏi quá nên game hơi dễ, tiệm xin phép tăng độ khó lên một chút. Từ nay anh Hấu chỉ múc nước dùng, <b>bạn phải tự bóp sốt ớt</b> đúng cấp khách gọi (khách không ăn cay thì khỏi bóp nha 😆).</li><li><b>Nồi luộc thứ ba</b> ở cấp 6 trong tab Nâng cấp, và vớt mì giờ có <b>vợt múc</b> từ nồi đổ vào tô.</li><li><b>Chỉnh to nhỏ</b> nhạc nền và âm thanh trong Cài đặt, có cả <b>giao diện tối</b>.</li><li>Sửa lỗi: vòng thời gian quanh khách đã hiện lại; Cô Chôm đang đi chợ thì chọn <b>Chờ Cô Chôm về</b>, không bị kẹt nữa.</li>":""}${t?"<li>Bản trước: 5 món lẩu mới, Giải mì mỗi ngày, chọc quán bên cạnh, 8 topping mới, chuyện tình anh Hấu với bé Na.</li>":""}</ul>`,[["Đã hiểu",()=>WA(),1],...t?[["Thi Giải mì",()=>Fo()]]:[]]);return}const A=(o.pr||[]).filter(n=>n.d===o.day-1&&gn[n.k]);if(A.length&&o.prSeen!==o.day){o.prSeen=o.day,z(),X(`${yA("happy","cardM")}<h2>Hôm qua quán có quà!</h2><ul class="news" id="prYest">${A.map(n=>`<li><b></b> ${gn[n.k].past} ${gn[n.k].good?"🎁":"😈"}</li>`).join("")}</ul>`,[["Trả lễ",()=>Mi(),1],["Để sau",()=>WA()]]),d("prYest").querySelectorAll("b").forEach((n,t)=>{n.textContent=A[t].n});return}if(o.love&&o.love.seen!==o.day&&o.staff.boil&&o.staff.season&&(Ct("boil")||o.love.back===o.day)){const n=Ct("boil"),t=!n&&o.love.gift;o.love.seen=o.day,t&&(o.love.gift=0,o.buzzNext=Math.min(.5,(o.buzzNext||0)+.2)),z(),X(`<div class="drama"><div class="dface dico duo">${xo(n?"love":t?"ring":"love")}</div><span class="dtag">Chuyện tình trong bếp</span><h2>${n?"Hôm nay Hấu và Na nghỉ":"Hấu và Na đi làm lại!"}</h2><p>${n?`Chủ quán tự luộc mì, tự nêm nước dùng tới hết ngày ${o.away.boil[1]}. Mấy ngày này không trả lương hai đứa.`:t?"Hai đứa mang kẹo cưới về mời khách, hôm nay quán đông hơn hẳn.":"Hai đứa về làm lại, bếp lại có người phụ luộc mì với nêm nước dùng."}</p></div>`,[[n?"Tự làm thôi":"Mừng hai đứa",()=>WA(),1]]);return}!Is()&&i.greetDay!==o.day&&(i.greetDay=o.day,setTimeout(()=>{
+  checkUnclaimedTournamentReward();
+  checkAdminGifts();if(o.gift){const n=o.gift;o.gift=null,o.money+=n.v,o.cur.gift=(o.cur.gift||0)+n.v,z(),C("star"),X(`<h2>${V(n.n)}</h2><p>${V(n.d)}</p><p class="lvup">+${y(n.v)} vào két</p>`,[["Tuyệt",()=>{xA(),Yt({x:innerWidth/2,y:innerHeight/2},8,0),kn(),WA()},1]]);return}if(o.debts&&o.debts.length){const n=o.debts.shift();if(tA(.75)){const t=T([0,5e3,1e4]);S("Khách trả nợ",n.v+t),z(),C("star"),X(`<div class="drama"><div class="dface">${wA(n.f,"happy")}</div><span class="dtag">Trả nợ</span><h2>${V(n.n)} quay lại trả nợ</h2><p>“Hôm qua cảm ơn quán nha!” ${V(n.n)} trả ${y(n.v)}${t?`, gửi thêm ${y(t)} cảm ơn`:""}.</p></div>`,[["Tuyệt",()=>{Yt({x:innerWidth/2,y:innerHeight/2},6,0),kn(),WA()},1]])}else z(),X(`<div class="drama"><div class="dface">${wA(n.f,"ok")}</div><span class="dtag">Ghi nợ</span><h2>${V(n.n)} chưa quay lại</h2><p>Khoản ghi nợ ${y(n.v)} hôm qua coi như mất. Lần sau cân nhắc kỹ hơn nha.</p></div>`,[["Đành vậy",()=>WA(),1]]);return}if(o.lvNew){const n=o.lvNew,t=Ce(n);o.lvNew=0,z(),sn(40),X(`${yA("happy","cardM")}<h2>Lên cấp ${n}!</h2><p>Quán giờ là <b>${en(n)}</b>.</p>${n===3?'<p class="lvup">Từ cấp 3 bếp không còn hiện gợi ý từng bước nữa, tự nhớ cách nấu nha!</p>':""}${t.length?`<p class="lvup">Mở khóa được: ${t.join(", ")}.</p>`:""}`,[["Xem trong Nâng cấp",()=>{i.tab="nangcap",pA(),WA()},1],["Để sau",()=>WA()]]);return}if((o.news||0)<bt&&o.day>1){const n=o.news||0,t=n<4;o.news=bt,z(),X(`${yA("happy","cardM")}<h2>Tiệm có gì mới?</h2><ul class="news"><li><b>Chuyển tiệm sang máy khác</b>: đổi điện thoại hay mở game bằng trình duyệt khác (Safari, Chrome, trong app TikTok, Facebook) thì ở máy cũ vào Cài đặt, chọn <b>Chuyển sang máy khác</b> để lấy mã 8 ký tự, rồi nhập mã ở máy mới. Không phải chép mã dài nữa.</li>${n<6?"<li><b>Rửa tô cuối ngày</b>: đóng cửa xong, ở thẻ tổng kết bấm <b>Rửa tô</b> rồi vuốt qua lại cho tô sạch trong 15 giây. Tô sạch cất lại vào kho, mai đỡ tiền mua tô. Không thích thì bỏ qua.</li><li><b>Nước lẩu bí truyền</b> trong tab Kho (từ ngày 3): nhớ đúng thứ tự thả gia vị theo công thức của tuần. Nấu đúng thì hôm đó khách gọi nồi ấy chấm thêm sao, tip thêm.</li><li><b>Đơn giao xa</b>: quán đã lên app thì thỉnh thoảng có đơn tài xế không nhận. Tự chạy xe máy né ổ gà, vũng nước để được tip, hoặc thuê ship ngoài.</li>":""}${n<5?"<li><b>Tự bóp sốt ớt</b>: phụ bếp gắp topping với nêm nếm giỏi quá nên game hơi dễ, tiệm xin phép tăng độ khó lên một chút. Từ nay anh Hấu chỉ múc nước dùng, <b>bạn phải tự bóp sốt ớt</b> đúng cấp khách gọi (khách không ăn cay thì khỏi bóp nha 😆).</li><li><b>Nồi luộc thứ ba</b> ở cấp 6 trong tab Nâng cấp, và vớt mì giờ có <b>vợt múc</b> từ nồi đổ vào tô.</li><li><b>Chỉnh to nhỏ</b> nhạc nền và âm thanh trong Cài đặt, có cả <b>giao diện tối</b>.</li><li>Sửa lỗi: vòng thời gian quanh khách đã hiện lại; Cô Chôm đang đi chợ thì chọn <b>Chờ Cô Chôm về</b>, không bị kẹt nữa.</li>":""}${t?"<li>Bản trước: 5 món lẩu mới, Giải mì mỗi ngày, chọc quán bên cạnh, 8 topping mới, chuyện tình anh Hấu với bé Na.</li>":""}</ul>`,[["Đã hiểu",()=>WA(),1],...t?[["Thi Giải mì",()=>Fo()]]:[]]);return}const A=(o.pr||[]).filter(n=>n.d===o.day-1&&gn[n.k]);if(A.length&&o.prSeen!==o.day){o.prSeen=o.day,z(),X(`${yA("happy","cardM")}<h2>Hôm qua quán có quà!</h2><ul class="news" id="prYest">${A.map(n=>`<li><b></b> ${gn[n.k].past} ${gn[n.k].good?"🎁":"😈"}</li>`).join("")}</ul>`,[["Trả lễ",()=>Mi(),1],["Để sau",()=>WA()]]),d("prYest").querySelectorAll("b").forEach((n,t)=>{n.textContent=A[t].n});return}if(o.love&&o.love.seen!==o.day&&o.staff.boil&&o.staff.season&&(Ct("boil")||o.love.back===o.day)){const n=Ct("boil"),t=!n&&o.love.gift;o.love.seen=o.day,t&&(o.love.gift=0,o.buzzNext=Math.min(.5,(o.buzzNext||0)+.2)),z(),X(`<div class="drama"><div class="dface dico duo">${xo(n?"love":t?"ring":"love")}</div><span class="dtag">Chuyện tình trong bếp</span><h2>${n?"Hôm nay Hấu và Na nghỉ":"Hấu và Na đi làm lại!"}</h2><p>${n?`Chủ quán tự luộc mì, tự nêm nước dùng tới hết ngày ${o.away.boil[1]}. Mấy ngày này không trả lương hai đứa.`:t?"Hai đứa mang kẹo cưới về mời khách, hôm nay quán đông hơn hẳn.":"Hai đứa về làm lại, bếp lại có người phụ luộc mì với nêm nước dùng."}</p></div>`,[[n?"Tự làm thôi":"Mừng hai đứa",()=>WA(),1]]);return}!Is()&&i.greetDay!==o.day&&(i.greetDay=o.day,setTimeout(()=>{
       if(i.mode==="prep"&&d("modal").hidden){
         if(o.day>=2&&o.tutDone&&localStorage.getItem("tiemMiCayChalPromo")!==getTodayDateStr()){
           showTournamentPromoModal(false);
@@ -400,7 +401,7 @@ async function Fo(){
   <div class="money chpts"><small>Điểm</small><span class="mv" id="chPts">${dA(Math.max(0,n.score))}</span></div>
   <div class="r" id="chSub">${Eo(n)}</div>`}function Xh(){const A=document.querySelector("#top .sub");A&&(A.textContent=Uo()),Je()}function wi(){const A=i.chal;if(!A)return;const n=d("chPts");n&&(n.textContent=dA(Math.max(0,A.score)),cA(n.parentNode,"gain"));const t=d("chSub");t&&(t.textContent=Eo(A))}function jo(A){const n=i.chal;if(!n)return;clearInterval(Un),i.run=!1,i.paused=!1;const t={score:Math.max(0,n.score),served:n.served,perfect:n.perfect,wrong:n.wrong,lost:n.lost};if(o=JSON.parse(n.snap),i.chal=null,w=null,i.slots=[],i.online=[],i.pots=[],i.basket=0,i.pq=[],C("day"),TA(),A){M("Đã dừng lượt thi, lượt này không tính điểm");return}Nh(n,t)}async function Nh(A,n){if(X(`<div class="chres"><span class="dtag">Giải mì ${ce(A.day)} · ${A.practice?"thi thử":`lượt ${A.n}/${oe}`}</span><h2>${dA(n.score)} điểm</h2>
     <div class="cst"><span><b>${n.served}</b>tô đúng</span><span><b>${n.perfect}</b>mì chuẩn</span><span><b>${n.wrong}</b>sai món</span><span><b>${n.lost}</b>bỏ về</span></div>
-    <p class="note" id="chRank">${A.practice?"Thi thử không tính hạng.":"Đang gửi điểm…"}</p></div>`,[["Chép kết quả để khoe",()=>Sh(A,n),1,1],["Bảng giải",()=>se()],["Đóng",()=>{}]]),n.served&&sn(n.score>=1500?40:16),A.practice)return;const t={op:"end",id:VA(),name:XA(),day:A.day,n:A.n,token:A.token,...n};t.sig=Fn([t.id,t.day,t.n,t.score,t.served,t.perfect,t.wrong,t.lost,t.token].join("|"));let e=null;for(let c=0;c<3&&(e=await _A("api/chal",t),!(e.ok||e.status&&e.status<500));c++)await new Promise(l=>setTimeout(l,2500));const a=d("chRank");e.ok&&e.j.rank?(A.rank=e.j.rank,A.total=e.j.total,a&&(a.innerHTML=`Hạng <b>${dA(e.j.rank)}</b> / ${dA(e.j.total)} quán hôm nay · điểm cao nhất của quán: <b>${dA(e.j.best)}</b>`)):a&&(a.textContent=e.j&&e.j.error||"Chưa gửi được điểm, kiểm tra mạng nha.")}function Sh(A,n){const t=/^https?:/.test(location.origin)?location.origin:"https://aenhatrang.com",e=`🍜 Giải mì ${ce(A.day)} · ${XA()}
+    <p class="note" id="chRank">${A.practice?"Thi thử không tính hạng.":"Đang gửi điểm…"}</p></div>`,[["Chép kết quả để khoe",()=>Sh(A,n),1,1],["Bảng giải",()=>se()],["Đóng",()=>{}]]),n.served&&sn(n.score>=1500?40:16),A.practice)return;const t={op:"end",id:VA(),name:XA(),day:A.day,n:A.n,token:A.token,...n};t.sig=Fn([t.id,t.day,t.n,t.score,t.served,t.perfect,t.wrong,t.lost,t.token].join("|"));let e=null;for(let c=0;c<3&&(e=await _A("api/chal",t),!(e.ok||e.status&&e.status<500));c++)await new Promise(l=>setTimeout(l,2500));clientChalCache=null;const a=d("chRank");e.ok&&e.j&&e.j.rank?(A.rank=e.j.rank,A.total=e.j.total,a&&(a.innerHTML=`Hạng <b>${dA(e.j.rank)}</b> / ${dA(e.j.total)} quán hôm nay · điểm cao nhất: <b>${dA(e.j.best||t.score)}</b>${e.j.left!=null?` · còn <b>${e.j.left}</b> lượt thi`:""}`)):a&&(a.textContent=e.j&&e.j.error||"Chưa gửi được điểm, kiểm tra mạng nha.")}function Sh(A,n){const t=/^https?:/.test(location.origin)?location.origin:"https://aenhatrang.com",e=`🍜 Giải mì ${ce(A.day)} · ${XA()}
 ${n.served} tô · ${dA(n.score)} điểm${A.rank?` · hạng ${dA(A.rank)}/${dA(A.total)}`:""} 🌶️
 ${t}`,a=()=>{let c=d("chShare");const l=d("card").querySelector(".chres");!c&&l&&(l.insertAdjacentHTML("beforeend",'<textarea id="chShare" class="share" rows="3" readonly aria-label="Kết quả để chép"></textarea>'),c=d("chShare")),c&&(c.value=e,c.focus(),c.select()),M("Bôi đen sẵn rồi, bấm giữ rồi chọn Sao chép nha")};try{navigator.clipboard.writeText(e).then(()=>M("Đã chép, dán vào tin nhắn để khoe nha"),a)}catch{a()}}const Xo=A=>A?`<i class="ccup c${A}" title="Cúp Giải mì tuần trước">${ai}</i>`:"",No=(A,n)=>A&&o.tutDone?`<button class="pkb" type="button" data-pi="${n}" aria-label="Chọc quán này">${So}</button>`:"<span></span>";async function se(A){
   A = (A === "w" || A === "hof") ? A : "d";
@@ -1141,6 +1142,79 @@ function showAdminInboxModal() {
     }, 1, 1],
     ["Đóng", () => {}]
   ]);
+}
+
+// --- QUÀ TẶNG TIỀN TỪ ADMIN (ADMIN GIFTS TO NOODLE SHOP) ---
+function showAdminGiftClaimModal(gift) {
+  const amt = Number(gift.amount) || 0;
+  const amtStr = y(amt);
+
+  X(`
+    <div style="text-align:center;padding:4px 0;">
+      <div style="font-size:48px;animation:boing 0.8s ease infinite;">🎁💰✨</div>
+      <h2 style="font-family:var(--fd);color:#C62828;font-size:23px;margin:6px 0;">QUÀ TẶNG TỪ ADMIN!</h2>
+      <p style="font-size:13.5px;color:#5A2334;font-weight:700;margin-bottom:10px;">
+        Admin quản trị đã gửi tặng phần quà đặc biệt vào két quán của bạn:
+      </p>
+
+      <div style="background:linear-gradient(135deg, #FFF8E1, #FFECB3);border:2.5px solid #FFC107;border-radius:14px;padding:16px 14px;margin:10px 0;box-shadow:0 4px 15px rgba(255,193,7,0.3);">
+        <div style="font-size:14px;color:#92400E;margin-bottom:4px;font-weight:800;text-transform:uppercase;">
+          ${V(gift.title || "Quà Tặng Từ Ban Quản Trị")}
+        </div>
+        <div style="font-size:34px;font-weight:900;color:#C62828;letter-spacing:1px;margin:6px 0;">
+          +${amtStr}
+        </div>
+        ${gift.message ? `<div style="font-size:12.5px;color:#78350F;margin-top:6px;font-style:italic;background:rgba(255,255,255,0.7);padding:6px 10px;border-radius:8px;">“${V(gift.message)}”</div>` : ''}
+      </div>
+
+      <div style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:8px 12px;font-size:12px;color:#166534;font-weight:700;line-height:1.45;margin-bottom:6px;">
+        ✓ Tiền thưởng sẽ được cộng trực tiếp vào két tiền của quán để bạn nhập hàng và nâng cấp quán!
+      </div>
+    </div>`,
+    [
+      ["💰 Nhận Tiền Vào Két (+" + amtStr + ")", async () => {
+        o.money = (o.money || 0) + amt;
+        o.cur.gift = (o.cur.gift || 0) + amt;
+        z();
+        syncUserStoreSave();
+
+        C("star");
+        C("coin");
+        sn(50);
+        M(`🎉 Đã nhận +${amtStr} tiền quà tặng từ Admin vào két quán!`);
+
+        try {
+          await fetch("/api/user/gift/claim", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: gift.id })
+          });
+        } catch (e) {}
+
+        xA();
+        Re();
+      }, 1, 1],
+      ["Để sau", () => {}]
+    ]
+  );
+}
+
+async function checkAdminGifts() {
+  if (!o.tutDone) return false;
+  const u = localStorage.getItem("tiemMiCayUser") || "";
+  const code = o.storeCode || "";
+  const id = VA();
+  try {
+    const res = await fetch(`/api/user/gifts?id=${encodeURIComponent(id)}&username=${encodeURIComponent(u)}&code=${encodeURIComponent(code)}`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.gifts && data.gifts.length > 0) {
+        showAdminGiftClaimModal(data.gifts[0]);
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
 }
 
 function showDailyCheckinModal() {
