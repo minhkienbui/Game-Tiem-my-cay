@@ -110,6 +110,10 @@ async function autoFinalizeCompletedWeeks(sql) {
   }
 }
 
+let lbCache = { data: null, time: 0 };
+let chalGlobalCache = { data: null, time: 0 };
+let lastAutoFinalizeTime = 0;
+
 function getTodayChalDate() {
   const now = new Date();
   return `${now.getDate()}/${now.getMonth() + 1}`;
@@ -255,8 +259,12 @@ module.exports = async (req, res) => {
         return res.json({ ok: true, config: cfg, updated_at: lastUpdated });
       }
 
-      // 1. GET /api/lb
+      // 1. GET /api/lb (Cached & Blazing Fast)
       if (path === "/api/lb") {
+        const now = Date.now();
+        if (lbCache.data && (now - lbCache.time < 12000)) {
+          return res.json(lbCache.data);
+        }
         const top = await sql`
           SELECT id, name, CAST(profit AS FLOAT) as profit, day, served, lv, CAST(rate AS FLOAT) as rate
           FROM leaderboard
@@ -265,234 +273,167 @@ module.exports = async (req, res) => {
         `;
         const countRes = await sql`SELECT count(*) FROM leaderboard`;
         const total = Number(countRes[0]?.count || top.length);
-        return res.json({
+        const result = {
           ok: true,
           top,
           total,
           cups: { vua_mi_cay_vip: 1, sasin_01: 2 }
-        });
+        };
+        lbCache = { data: result, time: now };
+        return res.json(result);
       }
 
-      // 2. GET /api/chal (DAILY, WEEKLY TOURNAMENT TOP 1-2-3, HALL OF FAME)
+      // 2. GET /api/chal (HIGH-PERFORMANCE SINGLE-QUERY JOIN & 0-DELAY CACHE)
       if (path === "/api/chal") {
-        const shopId = urlObj.searchParams.get("id") || "";
+        const shopId = (urlObj.searchParams.get("id") || "").trim();
         const chalDay = getTodayChalDate();
         const curWeek = getWeekBounds();
-        await autoFinalizeCompletedWeeks(sql);
+        const now = Date.now();
 
-        // Automatically finalize any completed weeks and push top 1-2-3 to Hall of Fame
-        await autoFinalizeCompletedWeeks(sql);
-
-        // Auto-migration: ensure weekly_hall_of_fame table exists
-        try {
-          await sql`
-            CREATE TABLE IF NOT EXISTS weekly_hall_of_fame (
-              id TEXT PRIMARY KEY,
-              week_key TEXT,
-              week_title TEXT,
-              rank INT,
-              shop_id TEXT,
-              shop_name TEXT,
-              total_score INT,
-              reward_money INT,
-              custom_title TEXT,
-              claimed_shops TEXT DEFAULT '',
-              created_at BIGINT
-            )
-          `;
-        } catch (e) {}
-
-        // Today's top scores
-        const topRows = await sql`
-          SELECT id, MAX(score) as s
-          FROM challenges
-          WHERE day = ${chalDay}
-          GROUP BY id
-          ORDER BY s DESC
-          LIMIT 20
-        `;
-
-        const top = [];
-        for (const r of topRows) {
-          const nameRows = await sql`SELECT name FROM leaderboard WHERE id = ${r.id}`;
-          top.push({ id: r.id, name: nameRows[0]?.name || "Chủ quán ẩn danh", s: Number(r.s) });
+        // Auto-finalize completed weeks once every 5 minutes (not on every request!)
+        if (now - lastAutoFinalizeTime > 300000) {
+          lastAutoFinalizeTime = now;
+          autoFinalizeCompletedWeeks(sql).catch(() => {});
         }
 
-        // Today's player stats
-        const meRows = await sql`
-          SELECT count(*) as rounds, MAX(score) as best
-          FROM challenges
-          WHERE day = ${chalDay} AND id = ${shopId}
-        `;
-        const roundsDone = Number(meRows[0]?.rounds || 0);
-        const bestScore = Number(meRows[0]?.best || 0);
+        let globalData = (chalGlobalCache.data && (now - chalGlobalCache.time < 10000)) ? chalGlobalCache.data : null;
 
-        let rank = 0;
-        if (bestScore > 0) {
-          const rankRows = await sql`
-            SELECT count(DISTINCT id) as cnt
-            FROM challenges
-            WHERE day = ${chalDay} AND score > ${bestScore}
+        if (!globalData) {
+          // 1 query for today's top using JOIN (replaces 21 sequential queries!)
+          const top = await sql`
+            SELECT c.id, COALESCE(l.name, 'Chủ quán ẩn danh') as name, MAX(c.score) as s
+            FROM challenges c
+            LEFT JOIN leaderboard l ON c.id = l.id
+            WHERE c.day = ${chalDay}
+            GROUP BY c.id, l.name
+            ORDER BY s DESC
+            LIMIT 20
           `;
-          rank = Number(rankRows[0]?.cnt || 0) + 1;
-        }
 
-        const totalRows = await sql`SELECT count(DISTINCT id) as cnt FROM challenges WHERE day = ${chalDay}`;
-        const total = Math.max(top.length, Number(totalRows[0]?.cnt || 1));
-
-        // Weekly rankings: Total tournament score within the week
-        const wtopRows = await sql`
-          SELECT id, SUM(score) as s, COUNT(*) as rounds, MAX(score) as best
-          FROM challenges
-          WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec}
-          GROUP BY id
-          ORDER BY s DESC
-          LIMIT 30
-        `;
-
-        const wtop = [];
-        for (let idx = 0; idx < wtopRows.length; idx++) {
-          const wr = wtopRows[idx];
-          const nameRows = await sql`SELECT name FROM leaderboard WHERE id = ${wr.id}`;
-          wtop.push({
+          // 1 query for weekly top using JOIN (replaces 31 sequential queries!)
+          const wtopRaw = await sql`
+            SELECT c.id, COALESCE(l.name, 'Chủ quán ẩn danh') as name, SUM(c.score) as s, COUNT(*) as rounds
+            FROM challenges c
+            LEFT JOIN leaderboard l ON c.id = l.id
+            WHERE c.created_at >= ${curWeek.startSec} AND c.created_at <= ${curWeek.endSec}
+            GROUP BY c.id, l.name
+            ORDER BY s DESC
+            LIMIT 30
+          `;
+          const wtop = wtopRaw.map((wr, idx) => ({
             id: wr.id,
-            name: nameRows[0]?.name || "Chủ quán ẩn danh",
+            name: wr.name,
             s: Number(wr.s),
             rounds: Number(wr.rounds),
             rank: idx + 1,
             prize: idx === 0 ? 1000000 : idx === 1 ? 300000 : idx === 2 ? 100000 : 0
-          });
-        }
+          }));
 
-        const wCountRows = await sql`
-          SELECT count(DISTINCT id) as cnt
-          FROM challenges
-          WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec}
-        `;
-        const wtotal = Math.max(wtop.length, Number(wCountRows[0]?.cnt || 1));
-
-        // Weekly stats for current player
-        const wmeRows = await sql`
-          SELECT count(*) as rounds, SUM(score) as wscore, MAX(score) as wbest
-          FROM challenges
-          WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec} AND id = ${shopId}
-        `;
-        const wbest = Number(wmeRows[0]?.wscore || 0);
-        let wrank = 0;
-        if (wbest > 0) {
-          const wrankRows = await sql`
-            SELECT count(*) as cnt FROM (
-              SELECT id, SUM(score) as tot
-              FROM challenges
-              WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec}
-              GROUP BY id
-              HAVING SUM(score) > ${wbest}
-            ) sub
-          `;
-          wrank = Number(wrankRows[0]?.cnt || 0) + 1;
-        }
-
-        // Query Hall of Fame (Bảng Vinh Danh)
-        let hofRows = [];
-        try {
-          hofRows = await sql`
+          // Hall of Fame
+          const hofRows = await sql`
             SELECT id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
             FROM weekly_hall_of_fame
             ORDER BY created_at DESC, rank ASC
             LIMIT 20
           `;
 
-          // Seed default prestigious Hall of Fame if empty
-          if (!hofRows.length) {
-            const nowSec = Math.floor(Date.now() / 1000);
-            const seeds = [
-              { id: "2026-W38_1", week_key: "2026-W38", week_title: "Tuần 38 (Mùa Khai Xuân)", rank: 1, shop_id: "vua_mi_cay_vip", shop_name: "Vua Mì Cay Sasin", total_score: 18650, reward_money: 1000000, custom_title: "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC", claimed_shops: "", created_at: nowSec - 86400 * 7 },
-              { id: "2026-W38_2", week_key: "2026-W38", week_title: "Tuần 38 (Mùa Khai Xuân)", rank: 2, shop_id: "seoul_02", shop_name: "Tiệm Mì Cay Seoul Phố", total_score: 14820, reward_money: 300000, custom_title: "🥈 Á QUÂN BẬC THẦY HỎA LỰC", claimed_shops: "", created_at: nowSec - 86400 * 7 },
-              { id: "2026-W38_3", week_key: "2026-W38", week_title: "Tuần 38 (Mùa Khai Xuân)", rank: 3, shop_id: "nha_cao", shop_name: "Mì Cay Nhà Cáo", total_score: 11450, reward_money: 100000, custom_title: "🥉 QUÝ QUÂN TINH ANH NẤU MÌ", claimed_shops: "", created_at: nowSec - 86400 * 7 }
-            ];
-            for (const s of seeds) {
-              await sql`
-                INSERT INTO weekly_hall_of_fame (id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at)
-                VALUES (${s.id}, ${s.week_key}, ${s.week_title}, ${s.rank}, ${s.shop_id}, ${s.shop_name}, ${s.total_score}, ${s.reward_money}, ${s.custom_title}, ${s.claimed_shops}, ${s.created_at})
-                ON CONFLICT (id) DO NOTHING
-              `;
+          const cups = {};
+          for (const h of hofRows) {
+            if (h.shop_id && !cups[h.shop_id] && Number(h.rank) <= 3) {
+              cups[h.shop_id] = Number(h.rank);
             }
-            hofRows = await sql`
-              SELECT id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
-              FROM weekly_hall_of_fame
-              ORDER BY created_at DESC, rank ASC
-              LIMIT 20
-            `;
           }
-        } catch (e) {}
 
-        // Check if player has an unclaimed weekly prize (Top 1: 1Tr, Top 2: 300k, Top 3: 100k)
+          const countRes = await sql`SELECT count(DISTINCT id) as cnt FROM challenges WHERE day = ${chalDay}`;
+          const total = Math.max(top.length, Number(countRes[0]?.cnt || 1));
+          const wCountRes = await sql`SELECT count(DISTINCT id) as cnt FROM challenges WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec}`;
+          const wtotal = Math.max(wtop.length, Number(wCountRes[0]?.cnt || 1));
+
+          globalData = {
+            day: chalDay,
+            top: top.map(r => ({ id: r.id, name: r.name, s: Number(r.s) })),
+            wtop,
+            wtotal,
+            total,
+            cups,
+            hall_of_fame: hofRows.map(h => ({
+              id: h.id,
+              week_key: h.week_key,
+              week_title: h.week_title,
+              rank: Number(h.rank),
+              shop_id: h.shop_id,
+              shop_name: h.shop_name,
+              total_score: Number(h.total_score),
+              reward_money: Number(h.reward_money),
+              custom_title: h.custom_title,
+              claimed: Boolean((h.claimed_shops || "").includes(h.shop_id))
+            })),
+            rewards_info: [
+              { rank: 1, money: 1000000, title: "🥇 TOP 1 - QUÁN QUÂN: 1.000.000đ + Vinh Danh Hoàng Gia" },
+              { rank: 2, money: 300000, title: "🥈 TOP 2 - Á QUÂN 1: 300.000đ + Vinh Danh Bảng Vàng" },
+              { rank: 3, money: 100000, title: "🥉 TOP 3 - Á QUÂN 2: 100.000đ + Vinh Danh Bảng Vàng" }
+            ]
+          };
+          chalGlobalCache = { data: globalData, time: now };
+        }
+
+        // Fast player stats
+        let me = { left: 3, best: 0, rank: 0, wbest: 0, wrank: 0 };
         let unclaimed_reward = null;
+
         if (shopId) {
-          try {
-            const rewardRows = await sql`
-              SELECT id, week_key, week_title, rank, reward_money, custom_title, claimed_shops
-              FROM weekly_hall_of_fame
-              WHERE shop_id = ${shopId}
-              ORDER BY created_at DESC
-              LIMIT 10
-            `;
-            for (const r of rewardRows) {
-              const claimed = (r.claimed_shops || "").split(",").map(x => x.trim()).filter(Boolean);
-              if (!claimed.includes(shopId)) {
-                unclaimed_reward = {
-                  id: r.id,
-                  week_key: r.week_key,
-                  week_title: r.week_title,
-                  rank: Number(r.rank),
-                  money: Number(r.reward_money),
-                  custom_title: r.custom_title
-                };
-                break;
-              }
-            }
-          } catch (e) {}
-        }
+          const meRows = await sql`
+            SELECT count(*) as rounds, MAX(score) as best
+            FROM challenges
+            WHERE day = ${chalDay} AND id = ${shopId}
+          `;
+          const roundsDone = Number(meRows[0]?.rounds || 0);
+          const bestScore = Number(meRows[0]?.best || 0);
 
-        // Trophies / Cups for previous week champions
-        const cups = {};
-        for (const h of hofRows) {
-          if (h.shop_id && !cups[h.shop_id] && Number(h.rank) <= 3) {
-            cups[h.shop_id] = Number(h.rank);
+          const wmeRows = await sql`
+            SELECT count(*) as rounds, SUM(score) as wscore
+            FROM challenges
+            WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec} AND id = ${shopId}
+          `;
+          const wbest = Number(wmeRows[0]?.wscore || 0);
+
+          let rank = 0;
+          if (bestScore > 0) {
+            const rankIdx = globalData.top.findIndex(t => t.id === shopId);
+            rank = rankIdx >= 0 ? rankIdx + 1 : (globalData.top.filter(t => t.s > bestScore).length + 1);
           }
-        }
+          let wrank = 0;
+          if (wbest > 0) {
+            const wrankIdx = globalData.wtop.findIndex(t => t.id === shopId);
+            wrank = wrankIdx >= 0 ? wrankIdx + 1 : (globalData.wtop.filter(t => t.s > wbest).length + 1);
+          }
 
-        return res.json({
-          day: chalDay,
-          top,
-          wtop,
-          wtotal,
-          me: {
+          me = {
             left: Math.max(0, 3 - roundsDone),
             best: bestScore,
             rank,
             wbest,
             wrank
-          },
-          total,
-          cups,
-          rewards_info: [
-            { rank: 1, money: 1000000, title: "🥇 TOP 1 - QUÁN QUÂN: 1.000.000đ + Vinh Danh Hoàng Gia" },
-            { rank: 2, money: 300000, title: "🥈 TOP 2 - Á QUÂN 1: 300.000đ + Vinh Danh Bảng Vàng" },
-            { rank: 3, money: 100000, title: "🥉 TOP 3 - Á QUÂN 2: 100.000đ + Vinh Danh Bảng Vàng" }
-          ],
-          hall_of_fame: hofRows.map(h => ({
-            id: h.id,
-            week_key: h.week_key,
-            week_title: h.week_title,
-            rank: Number(h.rank),
-            shop_id: h.shop_id,
-            shop_name: h.shop_name,
-            total_score: Number(h.total_score),
-            reward_money: Number(h.reward_money),
-            custom_title: h.custom_title,
-            claimed: Boolean((h.claimed_shops || "").includes(h.shop_id))
-          })),
+          };
+
+          for (const h of globalData.hall_of_fame) {
+            if (h.shop_id === shopId && !h.claimed) {
+              unclaimed_reward = {
+                id: h.id,
+                week_key: h.week_key,
+                week_title: h.week_title,
+                rank: Number(h.rank),
+                money: Number(h.reward_money),
+                custom_title: h.custom_title
+              };
+              break;
+            }
+          }
+        }
+
+        return res.json({
+          ...globalData,
+          me,
           unclaimed_reward
         });
       }
@@ -1127,6 +1068,8 @@ module.exports = async (req, res) => {
 
       // 4. POST /api/lb
       if (path === "/api/lb") {
+        lbCache.time = 0;
+
         const shopId = String(body.id || "").slice(0, 32).trim();
         const name = String(body.name || "Tiệm Mì Cay").slice(0, 26).trim();
         const profit = parseInt(body.profit, 10) || 0;
@@ -1226,7 +1169,8 @@ module.exports = async (req, res) => {
         const shopId = tokRows[0]?.id || "guest";
 
         await sql`
-          INSERT INTO challenges (id, day, score, served, perfect, wrong, lost, created_at)
+          chalGlobalCache.time = 0;
+        INSERT INTO challenges (id, day, score, served, perfect, wrong, lost, created_at)
           VALUES (${shopId}, ${chalDay}, ${score}, ${served}, ${perfect}, ${wrong}, ${lost}, ${nowT})
         `;
 
