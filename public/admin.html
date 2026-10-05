@@ -1124,6 +1124,14 @@
         document.getElementById("pageSub").textContent = titleMap[tabId][1];
       }
 
+      if (tabId === "inbox") loadChatConversations();
+          clearInterval(adminPollTimer);
+          adminPollTimer = setInterval(() => {
+            loadChatConversations();
+            if (selectedConversationId) {
+              loadAdminThreadMessages(false);
+            }
+          }, 4000);
       if (tabId === "config") {
         loadGameConfig();
       }
@@ -1267,6 +1275,314 @@
       const inp = document.getElementById("lookupCodeInput");
       if (inp) {
         inp.value = code;
+        lookupStoreCode();
+      }
+    }
+
+    // =========================================================================
+    // NỀN TẢNG CHAT TRỰC TIẾP 1-1 VỚI NGƯỜI CHƠI (ADMIN 1-ON-1 MESSENGER)
+    // =========================================================================
+    let adminConversationsList = [];
+    let selectedConversationId = "";
+    let selectedConvData = null;
+    let adminPollTimer = null;
+
+    function formatChatTime(ts) {
+      if (!ts) return "";
+      const num = typeof ts === "string" ? parseInt(ts, 10) : Number(ts);
+      if (!num) return "";
+      const d = new Date(num * 1000);
+      const h = String(d.getHours()).padStart(2, "0");
+      const m = String(d.getMinutes()).padStart(2, "0");
+      return `${h}:${m}`;
+    }
+
+    async function loadChatConversations() {
+      try {
+        const res = await fetch("/api/admin/chat/conversations", {
+          headers: { "X-Admin-Code": getAdminAuthCode() || "09659" }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          adminConversationsList = data.conversations || [];
+
+          // Update sidebar badge
+          const sideInboxEl = document.getElementById("sideInboxCount");
+          if (sideInboxEl) {
+            sideInboxEl.textContent = data.total_unread || 0;
+            sideInboxEl.style.display = (data.total_unread > 0) ? "inline-block" : "none";
+          }
+
+          // Update overview KPI
+          const metricInboxEl = document.getElementById("metricInboxPending");
+          if (metricInboxEl) metricInboxEl.textContent = data.total_unread || 0;
+
+          filterConversationsList();
+
+          // Auto-select first conversation if none selected yet
+          if (!selectedConversationId && adminConversationsList.length > 0) {
+            selectAdminConversation(adminConversationsList[0].conversation_id);
+          }
+        } else {
+          const box = document.getElementById("adminConvItemsList");
+          if (box && !adminConversationsList.length) {
+            box.innerHTML = '<div style="text-align:center;padding:24px;color:#C62828;font-size:13px;">❌ Không tải được danh sách tin nhắn.</div>';
+          }
+        }
+      } catch (e) {
+        console.error("Lỗi nạp danh sách chat:", e);
+      }
+    }
+
+    function filterConversationsList() {
+      const q = (document.getElementById("adminConvSearch")?.value || "").toLowerCase().trim();
+      const filtered = adminConversationsList.filter(c => {
+        if (!q) return true;
+        return (c.display_name || "").toLowerCase().includes(q) ||
+               (c.store_code || "").toLowerCase().includes(q) ||
+               (c.last_message || "").toLowerCase().includes(q) ||
+               (c.conversation_id || "").toLowerCase().includes(q);
+      });
+      renderConversationsList(filtered);
+    }
+
+    function renderConversationsList(convs) {
+      const box = document.getElementById("adminConvItemsList");
+      if (!box) return;
+
+      if (!convs.length) {
+        box.innerHTML = '<div style="text-align:center;padding:28px 14px;color:var(--text-muted);font-size:13px;"><div style="font-size:32px;margin-bottom:6px;">📭</div>Chưa có người chơi nào gửi tin nhắn.</div>';
+        return;
+      }
+
+      box.innerHTML = convs.map(c => {
+        const isSelected = (c.conversation_id === selectedConversationId);
+        const hasUnread = (c.unread_count > 0);
+        const timeStr = c.last_time ? formatChatTime(c.last_time) : "";
+
+        return `
+          <div onclick="selectAdminConversation('${escapeHtml(c.conversation_id)}')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;margin-bottom:6px;cursor:pointer;background:${isSelected ? '#E7F5FF' : (hasUnread ? '#FFF8E1' : '#FFF')};border:1.5px solid ${isSelected ? '#1971C2' : (hasUnread ? '#F59E0B' : '#EADBDA')};box-shadow:${isSelected ? '0 3px 10px rgba(25,113,194,0.15)' : 'none'};transition:all 0.15s;">
+            <div style="position:relative;width:40px;height:40px;border-radius:50%;background:#F3ECE8;display:grid;place-items:center;font-size:20px;flex-shrink:0;">
+              👤
+              ${hasUnread ? `<span style="position:absolute;top:0;right:0;width:12px;height:12px;background:#EF4B3F;border:2px solid #FFF;border-radius:50%;"></span>` : ''}
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;">
+                <b style="font-size:13.5px;color:var(--sidebar);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:145px;">${escapeHtml(c.display_name)}</b>
+                <small style="font-size:11px;color:#888;">${timeStr}</small>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;">
+                <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">
+                  ${c.last_sender_type === 'admin' ? '<span style="color:#1D4ED8;font-weight:700;">Bạn: </span>' : ''}${escapeHtml(c.last_message || 'Bắt đầu chat')}
+                </span>
+                ${c.unread_count > 0 ? `<span style="background:#EF4B3F;color:#FFF;padding:1px 7px;border-radius:10px;font-size:10.5px;font-weight:800;flex-shrink:0;">+${c.unread_count}</span>` : ''}
+              </div>
+              ${c.store_code ? `<div style="font-size:11px;color:#C62828;margin-top:2px;font-weight:600;">Mã tiệm: <code style="font-size:11px;">${escapeHtml(c.store_code)}</code></div>` : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function selectAdminConversation(convId) {
+      selectedConversationId = convId;
+      selectedConvData = adminConversationsList.find(c => c.conversation_id === convId);
+
+      // Re-render list to show active highlight
+      filterConversationsList();
+
+      // Update Chat Header
+      const headerTitle = document.getElementById("activeUserName");
+      const headerSub = document.getElementById("activeUserSub");
+      const actionsBox = document.getElementById("activeThreadActions");
+      const footerBox = document.getElementById("activeThreadFooter");
+
+      if (headerTitle && selectedConvData) {
+        headerTitle.textContent = selectedConvData.display_name;
+      }
+      if (headerSub && selectedConvData) {
+        headerSub.innerHTML = `ID: <code>${escapeHtml(selectedConvData.conversation_id)}</code>${selectedConvData.store_code ? ` · Mã tiệm: <b style="color:#C62828;">${escapeHtml(selectedConvData.store_code)}</b>` : ''}`;
+      }
+      if (actionsBox) actionsBox.style.display = "flex";
+      if (footerBox) footerBox.style.display = "flex";
+
+      // Load Messages for this conversation
+      await loadAdminThreadMessages(true);
+
+      // Focus reply textarea
+      setTimeout(() => {
+        const inp = document.getElementById("adminReplyInput");
+        if (inp) inp.focus();
+      }, 100);
+    }
+
+    async function loadAdminThreadMessages(forceScroll = false) {
+      if (!selectedConversationId) return;
+      try {
+        const res = await fetch("/api/admin/chat/messages?conversation_id=" + encodeURIComponent(selectedConversationId), {
+          headers: { "X-Admin-Code": getAdminAuthCode() || "09659" }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          renderAdminThreadBubbles(data.messages || [], forceScroll);
+        }
+      } catch (e) {
+        console.error("Lỗi nạp tin nhắn thread:", e);
+      }
+    }
+
+    function renderAdminThreadBubbles(messages, forceScroll = false) {
+      const box = document.getElementById("activeThreadMessages");
+      if (!box) return;
+
+      if (!messages.length) {
+        box.innerHTML = '<div style="text-align:center;margin:auto;color:var(--text-muted);font-size:13.5px;"><div style="font-size:36px;margin-bottom:6px;">💬</div><b>Chưa có tin nhắn nào trong cuộc trò chuyện này.</b><br><span style="font-size:12px;">Hãy gửi tin nhắn đầu tiên bên dưới để bắt đầu trao đổi với người chơi!</span></div>';
+        return;
+      }
+
+      box.innerHTML = messages.map(m => {
+        const isAdmin = (m.sender_type === "admin");
+        const timeStr = m.created_at ? new Date(m.created_at * 1000).toLocaleTimeString("vi-VN") + " " + new Date(m.created_at * 1000).toLocaleDateString("vi-VN") : "";
+
+        if (isAdmin) {
+          return `
+            <div style="display:flex;justify-content:flex-end;margin-left:auto;max-width:75%;margin-bottom:6px;">
+              <div style="text-align:right;">
+                <div style="font-size:11px;color:#888;margin-bottom:3px;display:flex;justify-content:flex-end;align-items:center;gap:4px;">
+                  <span style="color:#1D4ED8;font-weight:700;">👑 Admin</span>
+                  <span>· ${timeStr}</span>
+                  <button type="button" onclick="deleteSingleChatMessage(${m.id})" style="border:none;background:none;color:#C92A2A;cursor:pointer;font-size:12px;padding:0 2px;" title="Xóa tin nhắn này">🗑️</button>
+                </div>
+                <div style="background:#EF4B3F;color:#FFF;padding:10px 15px;border-radius:18px 18px 4px 18px;font-size:13.5px;line-height:1.45;word-break:break-word;text-align:left;box-shadow:0 2px 6px rgba(239,75,63,0.25);">
+                  ${escapeHtml(m.message)}
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div style="display:flex;gap:10px;align-items:flex-start;max-width:75%;margin-bottom:6px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:#E9ECEF;display:grid;place-items:center;font-size:18px;flex-shrink:0;">👤</div>
+              <div>
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;display:flex;align-items:center;gap:4px;">
+                  <b style="color:var(--primary);">${escapeHtml(m.sender_name)}</b>
+                  <span>· ${timeStr}</span>
+                  <button type="button" onclick="deleteSingleChatMessage(${m.id})" style="border:none;background:none;color:#C92A2A;cursor:pointer;font-size:12px;padding:0 2px;" title="Xóa tin nhắn này">🗑️</button>
+                </div>
+                <div style="background:#FFF;color:var(--text);padding:10px 15px;border-radius:18px 18px 18px 4px;font-size:13.5px;line-height:1.45;word-break:break-word;border:1px solid var(--border);box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+                  ${escapeHtml(m.message)}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+      }).join("");
+
+      if (forceScroll) {
+        box.scrollTop = box.scrollHeight;
+      }
+    }
+
+    async function sendAdminReplyMessage() {
+      const inp = document.getElementById("adminReplyInput");
+      const msg = (inp?.value || "").trim();
+      if (!msg || !selectedConversationId) return;
+
+      inp.value = "";
+      try {
+        const res = await fetch("/api/admin/chat/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Code": getAdminAuthCode() || "09659"
+          },
+          body: JSON.stringify({
+            conversation_id: selectedConversationId,
+            message: msg
+          })
+        });
+        if (res.ok) {
+          showToast("✓ Đã gửi câu trả lời đến người chơi!");
+          await loadAdminThreadMessages(true);
+          loadChatConversations();
+        } else {
+          inp.value = msg;
+          alert("Lỗi gửi tin nhắn trả lời.");
+        }
+      } catch (e) {
+        inp.value = msg;
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    function setAdminReplyTemplate(text) {
+      const inp = document.getElementById("adminReplyInput");
+      if (inp) {
+        inp.value = text;
+        inp.focus();
+      }
+    }
+
+    async function deleteCurrentConversation() {
+      if (!selectedConversationId) return;
+      const targetName = selectedConvData?.display_name || selectedConversationId;
+      if (!confirm("CẢNH BÁO: Bạn có chắc chắn muốn xóa vĩnh viễn toàn bộ đoạn chat với '" + targetName + "'?")) return;
+
+      try {
+        const res = await fetch("/api/admin/chat/delete-conversation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Code": getAdminAuthCode() || "09659"
+          },
+          body: JSON.stringify({ conversation_id: selectedConversationId })
+        });
+        if (res.ok) {
+          showToast("✓ Đã xóa đoạn chat thành công!");
+          selectedConversationId = "";
+          selectedConvData = null;
+          document.getElementById("activeThreadActions").style.display = "none";
+          document.getElementById("activeThreadFooter").style.display = "none";
+          document.getElementById("activeUserName").textContent = "Chọn một người chơi để bắt đầu chat";
+          document.getElementById("activeUserSub").textContent = "Nhắn tin trực tiếp 1-1 hỗ trợ người chơi";
+          document.getElementById("activeThreadMessages").innerHTML = '<div style="text-align:center;margin:auto;color:var(--text-muted);font-size:13.5px;"><div style="font-size:42px;margin-bottom:8px;">💬</div><b>Đoạn chat đã được xóa thành công</b></div>';
+          loadChatConversations();
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối!");
+      }
+    }
+
+    async function deleteSingleChatMessage(id) {
+      if (!confirm("Xóa tin nhắn #" + id + "?")) return;
+      try {
+        const res = await fetch("/api/admin/chat/delete-message", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Code": getAdminAuthCode() || "09659"
+          },
+          body: JSON.stringify({ id })
+        });
+        if (res.ok) {
+          showToast("✓ Đã xóa tin nhắn!");
+          loadAdminThreadMessages(false);
+          loadChatConversations();
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối!");
+      }
+    }
+
+    function lookupActiveUserStore() {
+      if (!selectedConvData || !selectedConvData.store_code) {
+        showToast("Người chơi này chưa có mã tiệm!");
+        return;
+      }
+      showTab("users");
+      const inp = document.getElementById("lookupCodeInput");
+      if (inp) {
+        inp.value = selectedConvData.store_code;
         lookupStoreCode();
       }
     }
