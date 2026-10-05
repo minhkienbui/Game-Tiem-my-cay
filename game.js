@@ -680,7 +680,9 @@ function getChatDisplayName() {
 
 function formatChatTime(ts) {
   if (!ts) return "";
-  const d = new Date(ts * 1000);
+  const num = typeof ts === "string" ? parseInt(ts, 10) : Number(ts);
+  if (!num) return "";
+  const d = new Date(num * 1000);
   const h = String(d.getHours()).padStart(2, "0");
   const m = String(d.getMinutes()).padStart(2, "0");
   return `${h}:${m}`;
@@ -709,7 +711,7 @@ async function showLiveChatModal() {
             <div style="font-size:11.5px;color:#FCE7F3;opacity:0.9;">🟢 Đang trực tuyến · Phản hồi trực tiếp</div>
           </div>
         </div>
-        <button type="button" onclick="loadLiveChatMessages(true)" style="background:rgba(255,255,255,0.18);border:none;color:#FFF;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" title="Làm mới tin nhắn">🔄</button>
+        <button type="button" id="chatReloadBtn" style="background:rgba(255,255,255,0.18);border:none;color:#FFF;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" title="Làm mới tin nhắn">🔄</button>
       </div>
 
       <!-- USER SUB-INFO -->
@@ -725,15 +727,15 @@ async function showLiveChatModal() {
 
       <!-- QUICK SUGGESTIONS -->
       <div style="padding:6px 10px;background:${isDark ? '#2B1720' : '#F1F3F5'};display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;border-top:1px solid ${isDark ? '#3D202D' : '#E9ECEF'};">
-        <button type="button" onclick="insertChatQuickMsg('💡 Góp ý: ')" style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">💡 Góp ý</button>
-        <button type="button" onclick="insertChatQuickMsg('🐞 Báo lỗi: ')" style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">🐞 Báo lỗi</button>
-        <button type="button" onclick="insertChatQuickMsg('🔑 Xin hỗ trợ: ')" style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">🔑 Hỗ trợ tài khoản</button>
+        <button type="button" data-quick-chat="💡 Góp ý: " style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">💡 Góp ý</button>
+        <button type="button" data-quick-chat="🐞 Báo lỗi: " style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">🐞 Báo lỗi</button>
+        <button type="button" data-quick-chat="🔑 Xin hỗ trợ: " style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">🔑 Hỗ trợ tài khoản</button>
       </div>
 
       <!-- COMPOSER FOOTER -->
       <div style="padding:10px 12px;background:${isDark ? '#281B21' : '#FFF'};border-top:1px solid ${isDark ? '#3E242F' : '#EADBDA'};display:flex;gap:8px;align-items:center;">
-        <input type="text" id="chatInputBox" placeholder="Nhập tin nhắn gửi Admin..." maxlength="1000" style="flex:1;padding:10px 14px;border:1.5px solid ${isDark ? '#4D2B38' : '#E2D3CF'};border-radius:22px;font-size:13.5px;outline:none;background:${isDark ? '#1C1015' : '#FFF'};color:${isDark ? '#FFF' : '#2B1A14'};font-family:inherit;" onkeydown="if(event.key==='Enter')sendLiveChatMessage()">
-        <button type="button" id="chatSendBtn" onclick="sendLiveChatMessage()" style="background:#EF4B3F;color:#FFF;border:none;padding:9px 16px;border-radius:20px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit;">
+        <input type="text" id="chatInputBox" placeholder="Nhập tin nhắn gửi Admin (Enter để gửi)..." maxlength="1000" style="flex:1;padding:10px 14px;border:1.5px solid ${isDark ? '#4D2B38' : '#E2D3CF'};border-radius:22px;font-size:13.5px;outline:none;background:${isDark ? '#1C1015' : '#FFF'};color:${isDark ? '#FFF' : '#2B1A14'};font-family:inherit;">
+        <button type="button" id="chatSendBtn" style="background:#EF4B3F;color:#FFF;border:none;padding:9px 16px;border-radius:20px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit;">
           <span>Gửi</span> <span>✈️</span>
         </button>
       </div>
@@ -746,7 +748,31 @@ async function showLiveChatModal() {
     }]
   ]);
 
-  loadLiveChatMessages();
+  // Robust direct event binding inside modal
+  setTimeout(() => {
+    const sendBtn = d("chatSendBtn");
+    if (sendBtn) sendBtn.onclick = sendLiveChatMessage;
+
+    const inp = d("chatInputBox");
+    if (inp) {
+      inp.onkeydown = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendLiveChatMessage();
+        }
+      };
+      inp.focus();
+    }
+
+    const reloadBtn = d("chatReloadBtn");
+    if (reloadBtn) reloadBtn.onclick = () => loadLiveChatMessages(true);
+
+    document.querySelectorAll("[data-quick-chat]").forEach(btn => {
+      btn.onclick = () => insertChatQuickMsg(btn.dataset.quickChat);
+    });
+  }, 50);
+
+  loadLiveChatMessages(true);
   clearInterval(liveChatPollTimer);
   liveChatPollTimer = setInterval(() => {
     if (!d("modal") || d("modal").hidden || !d("chatThreadBox")) {
@@ -755,12 +781,7 @@ async function showLiveChatModal() {
       return;
     }
     loadLiveChatMessages(false);
-  }, 4000);
-
-  setTimeout(() => {
-    const inp = d("chatInputBox");
-    if (inp) inp.focus();
-  }, 100);
+  }, 3500);
 }
 
 function insertChatQuickMsg(prefix) {
@@ -853,8 +874,27 @@ async function sendLiveChatMessage() {
   const displayName = getChatDisplayName();
   const storeCode = o.storeCode || "";
 
-  if (btn) btn.disabled = true;
+  // 1. Optimistic append to UI immediately
+  const box = d("chatThreadBox");
+  if (box) {
+    const isDark = (typeof os === "function" && os());
+    const optimisticBubble = document.createElement("div");
+    optimisticBubble.style.cssText = "display:flex;justify-content:flex-end;margin-left:auto;max-width:85%;";
+    optimisticBubble.innerHTML = `
+      <div style="text-align:right;">
+        <div style="font-size:10.5px;color:${isDark ? '#A8928D' : '#888'};margin-bottom:2px;"><small>Vừa xong</small></div>
+        <div style="background:linear-gradient(135deg, #EF4B3F, #D32F2F);color:#FFF;padding:9px 13px;border-radius:16px 16px 4px 16px;font-size:13px;line-height:1.45;word-break:break-word;box-shadow:0 2px 6px rgba(239,75,63,0.3);text-align:left;opacity:0.85;">
+          ${V(msg)}
+        </div>
+      </div>
+    `;
+    box.appendChild(optimisticBubble);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // Clear input immediately
   inp.value = "";
+  if (btn) btn.disabled = true;
 
   try {
     const res = await fetch("/api/chat/send", {
@@ -871,17 +911,22 @@ async function sendLiveChatMessage() {
       C("tap");
       loadLiveChatMessages(true);
     } else {
-      inp.value = msg;
       M("Không gửi được tin nhắn, thử lại nhé!");
+      loadLiveChatMessages(true);
     }
   } catch (e) {
-    inp.value = msg;
     M("Lỗi kết nối mạng!");
   } finally {
     if (btn) btn.disabled = false;
     inp.focus();
   }
 }
+
+// Export functions to window so inline HTML onclick and scripts can call them seamlessly
+window.sendLiveChatMessage = sendLiveChatMessage;
+window.loadLiveChatMessages = loadLiveChatMessages;
+window.insertChatQuickMsg = insertChatQuickMsg;
+window.showLiveChatModal = showLiveChatModal;
 
 function showAdminInboxModal() {
   const curUser = localStorage.getItem("tiemMiCayUser") || o.shopName || "";

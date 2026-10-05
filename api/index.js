@@ -797,16 +797,17 @@ module.exports = async (req, res) => {
           RETURNING id, conversation_id, sender_type, sender_name, store_code, message, created_at
         `;
 
+        const row = inserted[0] || {};
         return res.json({
           ok: true,
-          message: inserted[0] || {
-            id: Date.now(),
-            conversation_id: convId,
-            sender_type: "user",
-            sender_name: senderName,
-            store_code: storeCode,
-            message,
-            created_at: nowT
+          message: {
+            id: row.id || Date.now(),
+            conversation_id: row.conversation_id || convId,
+            sender_type: row.sender_type || "user",
+            sender_name: row.sender_name || senderName,
+            store_code: row.store_code || storeCode,
+            message: row.message || message,
+            created_at: Number(row.created_at || nowT)
           }
         });
       }
