@@ -90,6 +90,10 @@ class DB:
     def fetchall(self):
         return self.cur.fetchall()
 
+    @property
+    def lastrowid(self):
+        return getattr(self.cur, "lastrowid", 0)
+
     def commit(self):
         return self.conn.commit()
 
@@ -133,6 +137,20 @@ def init_db():
                 updated_at BIGINT
             )
         """)
+        db.execute(f"""
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id {auto_id_type} PRIMARY KEY {auto_inc},
+                conversation_id TEXT,
+                sender_type TEXT,
+                sender_name TEXT,
+                store_code TEXT,
+                message TEXT,
+                created_at BIGINT,
+                is_read_by_admin INT DEFAULT 0,
+                is_read_by_user INT DEFAULT 0
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_chat_conv ON chat_messages(conversation_id, created_at)")
         db.execute(f"""
             CREATE TABLE IF NOT EXISTS admin_messages (
                 id {auto_id_type} PRIMARY KEY {auto_inc},
@@ -676,6 +694,104 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             })
         # 6. GET /api/admin/users
                 # GET /api/admin/inbox
+                # GET /api/chat/messages
+        if path == "/api/chat/messages":
+            conv_id = params.get("conversation_id", [""])[0].strip()
+            if not conv_id:
+                return self.send_json({"ok": False, "error": "Missing conversation_id"}, status=400)
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                SELECT id, conversation_id, sender_type, sender_name, store_code, message, created_at
+                FROM chat_messages
+                WHERE conversation_id = ?
+                ORDER BY created_at ASC, id ASC
+                LIMIT 200
+            """, (conv_id,))
+            rows = cur.fetchall()
+            cur.execute("UPDATE chat_messages SET is_read_by_user = 1 WHERE conversation_id = ? AND sender_type = 'admin'", (conv_id,))
+            conn.commit()
+            conn.close()
+
+            messages = []
+            for r in rows:
+                messages.append({
+                    "id": r[0], "conversation_id": r[1], "sender_type": r[2],
+                    "sender_name": r[3], "store_code": r[4] or "",
+                    "message": r[5], "created_at": r[6]
+                })
+            return self.send_json({"ok": True, "conversation_id": conv_id, "messages": messages})
+
+        # GET /api/admin/chat/conversations
+        if path == "/api/admin/chat/conversations":
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                SELECT
+                    conversation_id,
+                    MAX(sender_name) as display_name,
+                    MAX(store_code) as store_code,
+                    MAX(created_at) as last_time,
+                    SUM(CASE WHEN sender_type = 'user' AND is_read_by_admin = 0 THEN 1 ELSE 0 END) as unread_count,
+                    COUNT(*) as total_count
+                FROM chat_messages
+                GROUP BY conversation_id
+                ORDER BY last_time DESC
+                LIMIT 100
+            """)
+            rows = cur.fetchall()
+            convs = []
+            for r in rows:
+                cur.execute("""
+                    SELECT message, sender_type, created_at
+                    FROM chat_messages
+                    WHERE conversation_id = ?
+                    ORDER BY created_at DESC, id DESC LIMIT 1
+                """, (r[0],))
+                last_m = cur.fetchone()
+                convs.append({
+                    "conversation_id": r[0],
+                    "display_name": r[1] or r[0],
+                    "store_code": r[2] or "",
+                    "last_time": r[3] or 0,
+                    "unread_count": r[4] or 0,
+                    "total_count": r[5] or 0,
+                    "last_message": last_m[0] if last_m else "",
+                    "last_sender_type": last_m[1] if last_m else "user"
+                })
+            cur.execute("SELECT COUNT(*) FROM chat_messages WHERE sender_type = 'user' AND is_read_by_admin = 0")
+            total_unread = cur.fetchone()[0]
+            conn.close()
+            return self.send_json({"ok": True, "conversations": convs, "total_unread": total_unread})
+
+        # GET /api/admin/chat/messages
+        if path == "/api/admin/chat/messages":
+            conv_id = params.get("conversation_id", [""])[0].strip()
+            if not conv_id:
+                return self.send_json({"ok": False, "error": "Missing conversation_id"}, status=400)
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                SELECT id, conversation_id, sender_type, sender_name, store_code, message, created_at
+                FROM chat_messages
+                WHERE conversation_id = ?
+                ORDER BY created_at ASC, id ASC
+                LIMIT 300
+            """, (conv_id,))
+            rows = cur.fetchall()
+            cur.execute("UPDATE chat_messages SET is_read_by_admin = 1 WHERE conversation_id = ? AND sender_type = 'user'", (conv_id,))
+            conn.commit()
+            conn.close()
+
+            messages = []
+            for r in rows:
+                messages.append({
+                    "id": r[0], "conversation_id": r[1], "sender_type": r[2],
+                    "sender_name": r[3], "store_code": r[4] or "",
+                    "message": r[5], "created_at": r[6]
+                })
+            return self.send_json({"ok": True, "conversation_id": conv_id, "messages": messages})
+
         if path == "/api/admin/inbox":
             conn = DB()
             cur = conn
@@ -768,6 +884,101 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         body = self.read_json_body()
 
         # POST /api/inbox (Public Send Message to Admin)
+                # POST /api/chat/send (User: Send message to Admin 1-on-1)
+        if path == "/api/chat/send":
+            conv_id = str(body.get("conversation_id", "")).strip()
+            sender_name = str(body.get("sender_name") or body.get("sender") or "Khách").strip()[:50]
+            store_code = str(body.get("store_code") or body.get("storeCode") or "").strip().upper()[:20]
+            message = str(body.get("message") or body.get("content") or "").strip()[:3000]
+
+            if not conv_id or not message:
+                return self.send_json({"ok": False, "error": "Vui lòng nhập nội dung tin nhắn!"}, status=400)
+
+            now_t = int(time.time())
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                INSERT INTO chat_messages (conversation_id, sender_type, sender_name, store_code, message, created_at, is_read_by_admin, is_read_by_user)
+                VALUES (?, 'user', ?, ?, ?, ?, 0, 1)
+            """, (conv_id, sender_name, store_code, message, now_t))
+            msg_id = cur.lastrowid
+            conn.commit()
+            conn.close()
+
+            return self.send_json({
+                "ok": True,
+                "message": {
+                    "id": msg_id,
+                    "conversation_id": conv_id,
+                    "sender_type": "user",
+                    "sender_name": sender_name,
+                    "store_code": store_code,
+                    "message": message,
+                    "created_at": now_t
+                }
+            })
+
+        # POST /api/admin/chat/send (Admin: Reply directly to user)
+        if path == "/api/admin/chat/send":
+            conv_id = str(body.get("conversation_id", "")).strip()
+            admin_name = str(body.get("admin_name", "Admin Quản Trị")).strip()[:50]
+            message = str(body.get("message", "")).strip()[:3000]
+
+            if not conv_id or not message:
+                return self.send_json({"ok": False, "error": "Vui lòng nhập nội dung phản hồi!"}, status=400)
+
+            now_t = int(time.time())
+            conn = DB()
+            cur = conn
+            cur.execute("SELECT store_code FROM chat_messages WHERE conversation_id = ? LIMIT 1", (conv_id,))
+            st_row = cur.fetchone()
+            store_code = st_row[0] if st_row and st_row[0] else ""
+
+            cur.execute("""
+                INSERT INTO chat_messages (conversation_id, sender_type, sender_name, store_code, message, created_at, is_read_by_admin, is_read_by_user)
+                VALUES (?, 'admin', ?, ?, ?, ?, 1, 0)
+            """, (conv_id, admin_name, store_code, message, now_t))
+            msg_id = cur.lastrowid
+            conn.commit()
+            conn.close()
+
+            return self.send_json({
+                "ok": True,
+                "message": {
+                    "id": msg_id,
+                    "conversation_id": conv_id,
+                    "sender_type": "admin",
+                    "sender_name": admin_name,
+                    "store_code": store_code,
+                    "message": message,
+                    "created_at": now_t
+                }
+            })
+
+        # POST /api/admin/chat/delete-conversation (Delete entire thread)
+        if path == "/api/admin/chat/delete-conversation":
+            conv_id = str(body.get("conversation_id", "")).strip()
+            if conv_id:
+                conn = DB()
+                cur = conn
+                cur.execute("DELETE FROM chat_messages WHERE conversation_id = ?", (conv_id,))
+                conn.commit()
+                conn.close()
+                return self.send_json({"ok": True, "conversation_id": conv_id})
+            return self.send_json({"ok": False, "error": "Missing conversation_id"}, status=400)
+
+        # POST /api/admin/chat/delete-message (Delete single message)
+        if path == "/api/admin/chat/delete-message":
+            msg_id = int(body.get("id", 0))
+            if msg_id:
+                conn = DB()
+                cur = conn
+                cur.execute("DELETE FROM chat_messages WHERE id = ?", (msg_id,))
+                conn.commit()
+                conn.close()
+                return self.send_json({"ok": True, "id": msg_id})
+            return self.send_json({"ok": False, "error": "Missing message id"}, status=400)
+
         if path == "/api/inbox":
             sender = str(body.get("sender", "Khách ẩn danh")).strip()[:50]
             store_code = str(body.get("store_code") or body.get("storeCode") or "").strip().upper()[:20]

@@ -98,6 +98,18 @@ module.exports = async (req, res) => {
   // Auto-migration: ensure game_config table exists
   try {
     await sql`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY,
+        conversation_id TEXT,
+        sender_type TEXT,
+        sender_name TEXT,
+        store_code TEXT,
+        message TEXT,
+        created_at BIGINT,
+        is_read_by_admin INT DEFAULT 0,
+        is_read_by_user INT DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_chat_conv ON chat_messages(conversation_id, created_at);
       CREATE TABLE IF NOT EXISTS admin_messages (
         id SERIAL PRIMARY KEY,
         sender TEXT,
@@ -450,6 +462,123 @@ module.exports = async (req, res) => {
         return res.status(404).json({ ok: false });
       }
 
+      // GET /api/chat/messages (User 1-on-1 Chat History)
+      if (path === "/api/chat/messages") {
+        const convId = (urlObj.searchParams.get("conversation_id") || "").trim();
+        if (!convId) {
+          return res.status(400).json({ ok: false, error: "Missing conversation_id" });
+        }
+        const rows = await sql`
+          SELECT id, conversation_id, sender_type, sender_name, store_code, message, created_at
+          FROM chat_messages
+          WHERE conversation_id = ${convId}
+          ORDER BY created_at ASC, id ASC
+          LIMIT 200
+        `;
+        // Mark admin messages as read by user
+        await sql`
+          UPDATE chat_messages
+          SET is_read_by_user = 1
+          WHERE conversation_id = ${convId} AND sender_type = 'admin'
+        `;
+        return res.json({
+          ok: true,
+          conversation_id: convId,
+          messages: rows.map(r => ({
+            id: r.id,
+            conversation_id: r.conversation_id,
+            sender_type: r.sender_type,
+            sender_name: r.sender_name,
+            store_code: r.store_code || "",
+            message: r.message,
+            created_at: Number(r.created_at)
+          }))
+        });
+      }
+
+      // GET /api/admin/chat/conversations (Admin: List all 1-on-1 user threads)
+      if (path === "/api/admin/chat/conversations") {
+        const rows = await sql`
+          SELECT
+            c.conversation_id,
+            MAX(c.sender_name) as display_name,
+            MAX(c.store_code) as store_code,
+            MAX(c.created_at) as last_time,
+            SUM(CASE WHEN c.sender_type = 'user' AND c.is_read_by_admin = 0 THEN 1 ELSE 0 END) as unread_count,
+            COUNT(*) as total_count
+          FROM chat_messages c
+          GROUP BY c.conversation_id
+          ORDER BY last_time DESC
+          LIMIT 100
+        `;
+
+        const convs = [];
+        for (const r of rows) {
+          // get last message snippet
+          const lastMsgRows = await sql`
+            SELECT message, sender_type, created_at
+            FROM chat_messages
+            WHERE conversation_id = ${r.conversation_id}
+            ORDER BY created_at DESC, id DESC
+            LIMIT 1
+          `;
+          const lastM = lastMsgRows[0] || {};
+          convs.push({
+            conversation_id: r.conversation_id,
+            display_name: r.display_name || r.conversation_id,
+            store_code: r.store_code || "",
+            last_message: lastM.message || "",
+            last_sender_type: lastM.sender_type || "user",
+            last_time: Number(r.last_time || 0),
+            unread_count: Number(r.unread_count || 0),
+            total_count: Number(r.total_count || 0)
+          });
+        }
+
+        const totalUnreadRes = await sql`
+          SELECT count(*) FROM chat_messages WHERE sender_type = 'user' AND is_read_by_admin = 0
+        `;
+        return res.json({
+          ok: true,
+          conversations: convs,
+          total_unread: Number(totalUnreadRes[0]?.count || 0)
+        });
+      }
+
+      // GET /api/admin/chat/messages (Admin: Get full thread for selected user)
+      if (path === "/api/admin/chat/messages") {
+        const convId = (urlObj.searchParams.get("conversation_id") || "").trim();
+        if (!convId) {
+          return res.status(400).json({ ok: false, error: "Missing conversation_id" });
+        }
+        const rows = await sql`
+          SELECT id, conversation_id, sender_type, sender_name, store_code, message, created_at
+          FROM chat_messages
+          WHERE conversation_id = ${convId}
+          ORDER BY created_at ASC, id ASC
+          LIMIT 300
+        `;
+        // Mark user messages as read by admin
+        await sql`
+          UPDATE chat_messages
+          SET is_read_by_admin = 1
+          WHERE conversation_id = ${convId} AND sender_type = 'user'
+        `;
+        return res.json({
+          ok: true,
+          conversation_id: convId,
+          messages: rows.map(r => ({
+            id: r.id,
+            conversation_id: r.conversation_id,
+            sender_type: r.sender_type,
+            sender_name: r.sender_name,
+            store_code: r.store_code || "",
+            message: r.message,
+            created_at: Number(r.created_at)
+          }))
+        });
+      }
+
       // GET /api/admin/inbox (List Inbox Messages)
       if (path === "/api/admin/inbox") {
         const status = urlObj.searchParams.get("status");
@@ -635,6 +764,93 @@ module.exports = async (req, res) => {
           config: cfg,
           updated_at: nowT
         });
+      }
+
+      // POST /api/chat/send (User: Send message to Admin 1-on-1)
+      if (path === "/api/chat/send") {
+        const convId = String(body.conversation_id || "").trim();
+        const senderName = String(body.sender_name || body.sender || "Khách").slice(0, 50).trim();
+        const storeCode = String(body.store_code || body.storeCode || "").slice(0, 20).trim().toUpperCase();
+        const message = String(body.message || body.content || "").slice(0, 3000).trim();
+
+        if (!convId || !message) {
+          return res.status(400).json({ ok: false, error: "Vui lòng nhập nội dung tin nhắn!" });
+        }
+
+        const nowT = Math.floor(Date.now() / 1000);
+        const inserted = await sql`
+          INSERT INTO chat_messages (conversation_id, sender_type, sender_name, store_code, message, created_at, is_read_by_admin, is_read_by_user)
+          VALUES (${convId}, 'user', ${senderName}, ${storeCode}, ${message}, ${nowT}, 0, 1)
+          RETURNING id, conversation_id, sender_type, sender_name, store_code, message, created_at
+        `;
+
+        return res.json({
+          ok: true,
+          message: inserted[0] || {
+            id: Date.now(),
+            conversation_id: convId,
+            sender_type: "user",
+            sender_name: senderName,
+            store_code: storeCode,
+            message,
+            created_at: nowT
+          }
+        });
+      }
+
+      // POST /api/admin/chat/send (Admin: Reply directly to user)
+      if (path === "/api/admin/chat/send") {
+        const convId = String(body.conversation_id || "").trim();
+        const adminName = String(body.admin_name || "Admin Quản Trị").slice(0, 50).trim();
+        const message = String(body.message || "").slice(0, 3000).trim();
+
+        if (!convId || !message) {
+          return res.status(400).json({ ok: false, error: "Vui lòng nhập nội dung phản hồi!" });
+        }
+
+        // Get user store_code if available
+        const prevRows = await sql`SELECT store_code FROM chat_messages WHERE conversation_id = ${convId} LIMIT 1`;
+        const storeCode = prevRows[0]?.store_code || "";
+
+        const nowT = Math.floor(Date.now() / 1000);
+        const inserted = await sql`
+          INSERT INTO chat_messages (conversation_id, sender_type, sender_name, store_code, message, created_at, is_read_by_admin, is_read_by_user)
+          VALUES (${convId}, 'admin', ${adminName}, ${storeCode}, ${message}, ${nowT}, 1, 0)
+          RETURNING id, conversation_id, sender_type, sender_name, store_code, message, created_at
+        `;
+
+        return res.json({
+          ok: true,
+          message: inserted[0] || {
+            id: Date.now(),
+            conversation_id: convId,
+            sender_type: "admin",
+            sender_name: adminName,
+            store_code: storeCode,
+            message,
+            created_at: nowT
+          }
+        });
+      }
+
+      // POST /api/admin/chat/delete-conversation (Delete entire thread)
+      if (path === "/api/admin/chat/delete-conversation") {
+        const convId = String(body.conversation_id || "").trim();
+        if (convId) {
+          await sql`DELETE FROM chat_messages WHERE conversation_id = ${convId}`;
+          return res.json({ ok: true, conversation_id: convId });
+        }
+        return res.status(400).json({ ok: false, error: "Missing conversation_id" });
+      }
+
+      // POST /api/admin/chat/delete-message (Delete single message)
+      if (path === "/api/admin/chat/delete-message") {
+        const id = parseInt(body.id, 10);
+        if (id) {
+          await sql`DELETE FROM chat_messages WHERE id = ${id}`;
+          return res.json({ ok: true, id });
+        }
+        return res.status(400).json({ ok: false, error: "Missing message id" });
       }
 
       // POST /api/inbox (Public: Send message / feedback to Admin)

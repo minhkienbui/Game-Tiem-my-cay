@@ -31,7 +31,7 @@ function Bn(){const A=os(),n=document.documentElement;if(A&&!Bn.done){Bn.done=1;
       </div>
     </div>
     
-  </section>`,d("view").scrollTop=0;const n=()=>{Ta()&&_e(!0),Xn(),C("bell"),Ye(),o.fx==="auto"&&Oe()&&!o.fxTip&&(o.fxTip=!0,z(),setTimeout(()=>M("Máy đang bật giảm chuyển động nên hiệu ứng đang tắt. Bật lại trong Cài đặt, mục Hiệu ứng chuyển động."),700)),o.onboarded?TA():ii(!0,()=>TA())};d("goBtn").onclick=()=>{if(isTaxSealed())return showTaxSeizureModal();La()?n():ei(n)},d("howBtn").onclick=()=>ii(!1),d("regBtn")&&(d("regBtn").onclick=()=>showRegisterModal()),d("loginBtn")&&(d("loginBtn").onclick=()=>showLoginModal()),d("logoutBtn")&&(d("logoutBtn").onclick=()=>handleLogout()),d("recvBtn")&&(d("recvBtn").onclick=Na),d("inboxMsgBtn")&&(d("inboxMsgBtn").onclick=showAdminInboxModal),d("byeBtn")&&(d("byeBtn").onclick=Ra);const t=()=>{};if(_n){const e=_n;_n="",e==="tamper"?X("<h2>Bản lưu bị chỉnh sửa</h2><p>Dữ liệu lưu trên máy này đã bị sửa tay nên game không dùng được, quán mở lại từ đầu.</p><p>Nếu có mã sao lưu, vào Cài đặt và chọn Khôi phục từ mã.</p>",[["Đã hiểu",t,1]]):e==="refund"?X(`<h2>Quán giờ có cấp</h2><p>Món, trang bị và trang trí nay mở theo cấp quán. Những thứ bạn đã mua vượt cấp hiện tại được hoàn ${y(o.refund||0)} vào két, lên cấp là mua lại được.</p>`,[["Đã hiểu",t,1]]):t()}else t()}const La=()=>(o.terms||0)>=fe,Wa=`<h3>1. Về trò chơi</h3><p>Tiệm Mì Cay là game nấu mì miễn phí, chơi trên trình duyệt, do một nhà phát triển độc lập làm. Game không bán vật phẩm, không nạp tiền, không có quảng cáo và không đổi thưởng.</p>
+  </section>`,d("view").scrollTop=0;const n=()=>{Ta()&&_e(!0),Xn(),C("bell"),Ye(),o.fx==="auto"&&Oe()&&!o.fxTip&&(o.fxTip=!0,z(),setTimeout(()=>M("Máy đang bật giảm chuyển động nên hiệu ứng đang tắt. Bật lại trong Cài đặt, mục Hiệu ứng chuyển động."),700)),o.onboarded?TA():ii(!0,()=>TA())};d("goBtn").onclick=()=>{if(isTaxSealed())return showTaxSeizureModal();La()?n():ei(n)},d("howBtn").onclick=()=>ii(!1),d("regBtn")&&(d("regBtn").onclick=()=>showRegisterModal()),d("loginBtn")&&(d("loginBtn").onclick=()=>showLoginModal()),d("logoutBtn")&&(d("logoutBtn").onclick=()=>handleLogout()),d("recvBtn")&&(d("recvBtn").onclick=Na),d("inboxMsgBtn")&&(d("inboxMsgBtn").onclick=showLiveChatModal),d("byeBtn")&&(d("byeBtn").onclick=Ra);const t=()=>{};if(_n){const e=_n;_n="",e==="tamper"?X("<h2>Bản lưu bị chỉnh sửa</h2><p>Dữ liệu lưu trên máy này đã bị sửa tay nên game không dùng được, quán mở lại từ đầu.</p><p>Nếu có mã sao lưu, vào Cài đặt và chọn Khôi phục từ mã.</p>",[["Đã hiểu",t,1]]):e==="refund"?X(`<h2>Quán giờ có cấp</h2><p>Món, trang bị và trang trí nay mở theo cấp quán. Những thứ bạn đã mua vượt cấp hiện tại được hoàn ${y(o.refund||0)} vào két, lên cấp là mua lại được.</p>`,[["Đã hiểu",t,1]]):t()}else t()}const La=()=>(o.terms||0)>=fe,Wa=`<h3>1. Về trò chơi</h3><p>Tiệm Mì Cay là game nấu mì miễn phí, chơi trên trình duyệt, do một nhà phát triển độc lập làm. Game không bán vật phẩm, không nạp tiền, không có quảng cáo và không đổi thưởng.</p>
 <h3>2. Tiền và vật phẩm trong game</h3><p>Tiền, món, trang bị, điểm kinh nghiệm và thứ hạng đều là ảo, chỉ dùng trong game. Chúng không quy đổi được ra tiền thật, thẻ cào hay hiện vật. Người chơi cũng không được mua bán chúng với nhau.</p>
 <h3>3. Độ tuổi và sức khỏe</h3><p>Nội dung game phù hợp mọi lứa tuổi. Người dưới 16 tuổi nên chơi khi bố mẹ hoặc người giám hộ biết và đồng ý. Chơi game quá 180 phút mỗi ngày có thể ảnh hưởng xấu đến sức khỏe. Nhớ nghỉ mắt và vận động giữa các ngày bán.</p>
 <h3>4. Tiến trình của bạn</h3><p>Tiến trình lưu trong trình duyệt trên máy bạn. Xóa dữ liệu trình duyệt, dùng tab ẩn danh hoặc đổi máy có thể làm mất tiến trình. Muốn chơi tiếp ở máy hoặc trình duyệt khác, dùng mục Chuyển sang máy khác trong Cài đặt. Hãy dùng mục Sao lưu tiến trình trong Cài đặt để giữ mã khôi phục. Không có mã thì tiệm không lấy lại được tiến trình đã mất.</p>
@@ -102,7 +102,7 @@ e+=`<div class="tax-sec ${tPaid?"paid":"due"}">
   </p>
   ${!tPaid?`<button type="button" class="sbtn pri" data-a="paytax" style="width:100%;padding:9px;font-size:13.5px;font-weight:700;background:var(--ok)">🏛️ Tự Giác Nộp Thuế (${y(tAmt)})</button>`:""}
 </div>`;
-return e+=`<h3>Hôm nay · ngày ${o.day}</h3><div class="ledger">${a||'<p class="note">Chưa chi khoản nào.</p>'}${A.gift?L("Quà","+"+y(A.gift)):""}${(A.oth||[]).length?'<p class="lh">Phát sinh</p>'+_t(A.oth,!0)+_t(A.oth,!1):""}<p class="lh">Trừ lúc đóng cửa</p>${L("Mặt bằng","−"+y(W.rent))}${L(`Điện nước${jn()?` · ${jn()} trang bị`:""}`,"−"+y(c))}${RA.filter(l=>o.staff[l.id]).map(l=>L("Lương "+l.n,"−"+y(l.wage))).join("")}</div>`,e+=Ns(),t.length?(e+="<h3>Các ngày trước</h3>"+t.map((l,s)=>{const h=l.rev-l.cost;return`<details class="dayc"${s?"":" open"}><summary><span>Ngày ${l.day}</span><small>${l.served} tô${l.avg?" · ★ "+l.avg.toFixed(1).replace(".",","):""}</small><b class="${h<0?"neg":"pos"}">${hn(h)}</b></summary>${co(l)}</details>`}).join(""),e):e+'<p class="note">Hết ngày đầu tiên sẽ có sổ chi tiết từng ngày.</p>'}function Ah(){X(`<h2>Đặt tên quán</h2><p>Tối đa 26 ký tự, hiện trên biển hiệu và màn hình chào.</p><input id="nameIn" maxlength="26" value="${V(o.shopName)}" placeholder="Ví dụ: Mì Cay Nhà Cáo" aria-label="Tên quán">`,[["Huỷ",()=>{}],["Lưu tên",()=>{o.shopName=d("nameIn").value.replace(/\s+/g," ").trim().slice(0,26),z(),M("Đã đổi tên quán"),TA()},1]]),setTimeout(()=>{const A=d("nameIn");A&&A.focus()},50)}const so=()=>`<div class="vols">${[["vol","Nhạc nền"],["sfxVol","Âm thanh"]].map(([A,n])=>{const t=Math.round(Ue(o[A])*100);return`<label class="vol"><span>${n}</span><input type="range" min="0" max="100" step="5" value="${t}" data-vol="${A}" aria-label="Âm lượng ${n.toLowerCase()}" style="--p:${t}%"><b>${t}%</b></label>`}).join("")}</div>`;function ho(){document.querySelectorAll("#card [data-vol]").forEach(A=>{const n=A.dataset.vol,t=A.parentNode.querySelector("b"),e=()=>{const a=Math.max(0,Math.min(100,Math.round(+A.value||0)));o[n]=a/100,A.style.setProperty("--p",a+"%"),t&&(t.textContent=a+"%"),n==="vol"&&Kc()};A.addEventListener("input",e),A.addEventListener("change",()=>{e(),z(),n==="sfxVol"&&C("tap")})})}function NA(){X(`<h2>Cài đặt</h2><p>Phiên bản 2.1 · tiến trình lưu trong trình duyệt này. Đổi máy hay trình duyệt thì chọn <b>Chuyển sang máy khác</b>. ${o.lastBackup?`Sao lưu gần nhất: ngày ${o.lastBackup}.`:"Chưa sao lưu lần nào."}</p>${so()}${ms()}<p class="note credit">Nhạc nền: ${jt.map(A=>A.n).join(", ")} của Kevin MacLeod (incompetech.com), giấy phép CC BY 4.0.</p>`,[["📅 Điểm danh hàng ngày",()=>showDailyCheckinModal(),0,1],["🔑 Lưu / Tạo mã cửa hàng",()=>showStoreCodeModal(),0,1],["📬 Hộp thư gửi tin nhắn cho Admin",()=>showAdminInboxModal(),0,1],["Chuyển sang máy khác",()=>Xa(),0,1],["Nhận tiệm từ máy khác",()=>Na(),0,1],["Sao lưu tiến trình",()=>ys(),0,1],["Khôi phục từ mã",()=>ws(),0,1],[`Nhạc nền: ${o.music?"Bật":"Tắt"}`,()=>{o.music=!o.music,z(),o.music?Ye():Ba(),NA()},0,1],...o.music?[["Đổi bài nhạc",()=>{ka(),NA()},0,1]]:[],[`Âm thanh: ${o.sound?"Bật":"Tắt"}`,()=>{o.sound=!o.sound,z(),NA()},0,1],...aA()<3?[[`Gợi ý bước nấu: ${o.hint?"Bật":"Tắt"}`,()=>{o.hint=!o.hint,z(),NA()},0,1]]:[],[`Tô viền món khách gọi: ${o.mark===!1?"Tắt":"Bật"}`,()=>{o.mark=o.mark===!1,z(),NA()},0,1],[`Hiệu ứng chuyển động: ${o.fx==="on"?"Luôn bật":o.fx==="off"?"Tắt":Oe()?"Theo máy (đang tắt)":"Theo máy"}`,()=>{o.fx=o.fx==="auto"?"on":o.fx==="on"?"off":"auto",z(),it(),NA()},0,1],...Zt()?[[`Toàn màn hình: ${In()?"Bật":"Tắt"}`,()=>{_e(!In()),setTimeout(()=>{d("modal").hidden||NA()},350)},0,1]]:[],...gs()?[[`Phóng to vừa máy tính bảng: ${o.bigTab===!1?"Tắt":"Bật"}`,()=>{o.bigTab=o.bigTab===!1,z(),Ai="",ni(),setTimeout(()=>{d("modal").hidden||NA()},300)},0,1]]:[],[`Giao diện: ${o.theme==="dark"?"Tối":o.theme==="light"?"Sáng":Ca()?"Theo máy (đang tối)":"Theo máy"}`,()=>{o.theme=o.theme==="dark"?"light":o.theme==="light"?"auto":"dark",z(),Bn(),NA()},0,1],["Điều khoản chơi",()=>xs(),0,1],["Cách chơi",()=>{d("modal").hidden=!0,ii(!1)},0,1],["Đưa game ra màn hình chính",()=>Va(),0,1],["Chơi lại từ đầu",()=>X("<h2>Chơi lại từ đầu?</h2><p>Mất toàn bộ tiền, món đã mở, trang bị và đánh giá.</p>",[["Huỷ",()=>{}],["Xoá và chơi lại",()=>{Lt(),i.plan={},z(),TA()},1]]),0,1],["Đóng",()=>{},1]]),ho()}function nh(A){const n=A.target.closest("button");if(n){if(n.dataset.tab){i.tab=n.dataset.tab,pA();return}if(n.id==="renBtn")return Ah();if(n.id==="checkinBtn")return showDailyCheckinModal();if(n.id==="storeCodeBtn")return showStoreCodeModal();if(n.id==="hagBtn")return js();if(n.id==="lauBtn")return ol();if(n.id==="lbBtn")return Ph();if(n.id==="chalBtn")return Fo();if(n.id==="prBtn")return Mi();const payTaxBtn=n.closest("[data-a=\"paytax\"]");
+return e+=`<h3>Hôm nay · ngày ${o.day}</h3><div class="ledger">${a||'<p class="note">Chưa chi khoản nào.</p>'}${A.gift?L("Quà","+"+y(A.gift)):""}${(A.oth||[]).length?'<p class="lh">Phát sinh</p>'+_t(A.oth,!0)+_t(A.oth,!1):""}<p class="lh">Trừ lúc đóng cửa</p>${L("Mặt bằng","−"+y(W.rent))}${L(`Điện nước${jn()?` · ${jn()} trang bị`:""}`,"−"+y(c))}${RA.filter(l=>o.staff[l.id]).map(l=>L("Lương "+l.n,"−"+y(l.wage))).join("")}</div>`,e+=Ns(),t.length?(e+="<h3>Các ngày trước</h3>"+t.map((l,s)=>{const h=l.rev-l.cost;return`<details class="dayc"${s?"":" open"}><summary><span>Ngày ${l.day}</span><small>${l.served} tô${l.avg?" · ★ "+l.avg.toFixed(1).replace(".",","):""}</small><b class="${h<0?"neg":"pos"}">${hn(h)}</b></summary>${co(l)}</details>`}).join(""),e):e+'<p class="note">Hết ngày đầu tiên sẽ có sổ chi tiết từng ngày.</p>'}function Ah(){X(`<h2>Đặt tên quán</h2><p>Tối đa 26 ký tự, hiện trên biển hiệu và màn hình chào.</p><input id="nameIn" maxlength="26" value="${V(o.shopName)}" placeholder="Ví dụ: Mì Cay Nhà Cáo" aria-label="Tên quán">`,[["Huỷ",()=>{}],["Lưu tên",()=>{o.shopName=d("nameIn").value.replace(/\s+/g," ").trim().slice(0,26),z(),M("Đã đổi tên quán"),TA()},1]]),setTimeout(()=>{const A=d("nameIn");A&&A.focus()},50)}const so=()=>`<div class="vols">${[["vol","Nhạc nền"],["sfxVol","Âm thanh"]].map(([A,n])=>{const t=Math.round(Ue(o[A])*100);return`<label class="vol"><span>${n}</span><input type="range" min="0" max="100" step="5" value="${t}" data-vol="${A}" aria-label="Âm lượng ${n.toLowerCase()}" style="--p:${t}%"><b>${t}%</b></label>`}).join("")}</div>`;function ho(){document.querySelectorAll("#card [data-vol]").forEach(A=>{const n=A.dataset.vol,t=A.parentNode.querySelector("b"),e=()=>{const a=Math.max(0,Math.min(100,Math.round(+A.value||0)));o[n]=a/100,A.style.setProperty("--p",a+"%"),t&&(t.textContent=a+"%"),n==="vol"&&Kc()};A.addEventListener("input",e),A.addEventListener("change",()=>{e(),z(),n==="sfxVol"&&C("tap")})})}function NA(){X(`<h2>Cài đặt</h2><p>Phiên bản 2.1 · tiến trình lưu trong trình duyệt này. Đổi máy hay trình duyệt thì chọn <b>Chuyển sang máy khác</b>. ${o.lastBackup?`Sao lưu gần nhất: ngày ${o.lastBackup}.`:"Chưa sao lưu lần nào."}</p>${so()}${ms()}<p class="note credit">Nhạc nền: ${jt.map(A=>A.n).join(", ")} của Kevin MacLeod (incompetech.com), giấy phép CC BY 4.0.</p>`,[["📅 Điểm danh hàng ngày",()=>showDailyCheckinModal(),0,1],["🔑 Lưu / Tạo mã cửa hàng",()=>showStoreCodeModal(),0,1],["💬 Nhắn tin trực tiếp với Admin",()=>showLiveChatModal(),0,1],["Chuyển sang máy khác",()=>Xa(),0,1],["Nhận tiệm từ máy khác",()=>Na(),0,1],["Sao lưu tiến trình",()=>ys(),0,1],["Khôi phục từ mã",()=>ws(),0,1],[`Nhạc nền: ${o.music?"Bật":"Tắt"}`,()=>{o.music=!o.music,z(),o.music?Ye():Ba(),NA()},0,1],...o.music?[["Đổi bài nhạc",()=>{ka(),NA()},0,1]]:[],[`Âm thanh: ${o.sound?"Bật":"Tắt"}`,()=>{o.sound=!o.sound,z(),NA()},0,1],...aA()<3?[[`Gợi ý bước nấu: ${o.hint?"Bật":"Tắt"}`,()=>{o.hint=!o.hint,z(),NA()},0,1]]:[],[`Tô viền món khách gọi: ${o.mark===!1?"Tắt":"Bật"}`,()=>{o.mark=o.mark===!1,z(),NA()},0,1],[`Hiệu ứng chuyển động: ${o.fx==="on"?"Luôn bật":o.fx==="off"?"Tắt":Oe()?"Theo máy (đang tắt)":"Theo máy"}`,()=>{o.fx=o.fx==="auto"?"on":o.fx==="on"?"off":"auto",z(),it(),NA()},0,1],...Zt()?[[`Toàn màn hình: ${In()?"Bật":"Tắt"}`,()=>{_e(!In()),setTimeout(()=>{d("modal").hidden||NA()},350)},0,1]]:[],...gs()?[[`Phóng to vừa máy tính bảng: ${o.bigTab===!1?"Tắt":"Bật"}`,()=>{o.bigTab=o.bigTab===!1,z(),Ai="",ni(),setTimeout(()=>{d("modal").hidden||NA()},300)},0,1]]:[],[`Giao diện: ${o.theme==="dark"?"Tối":o.theme==="light"?"Sáng":Ca()?"Theo máy (đang tối)":"Theo máy"}`,()=>{o.theme=o.theme==="dark"?"light":o.theme==="light"?"auto":"dark",z(),Bn(),NA()},0,1],["Điều khoản chơi",()=>xs(),0,1],["Cách chơi",()=>{d("modal").hidden=!0,ii(!1)},0,1],["Đưa game ra màn hình chính",()=>Va(),0,1],["Chơi lại từ đầu",()=>X("<h2>Chơi lại từ đầu?</h2><p>Mất toàn bộ tiền, món đã mở, trang bị và đánh giá.</p>",[["Huỷ",()=>{}],["Xoá và chơi lại",()=>{Lt(),i.plan={},z(),TA()},1]]),0,1],["Đóng",()=>{},1]]),ho()}function nh(A){const n=A.target.closest("button");if(n){if(n.dataset.tab){i.tab=n.dataset.tab,pA();return}if(n.id==="renBtn")return Ah();if(n.id==="checkinBtn")return showDailyCheckinModal();if(n.id==="storeCodeBtn")return showStoreCodeModal();if(n.id==="hagBtn")return js();if(n.id==="lauBtn")return ol();if(n.id==="lbBtn")return Ph();if(n.id==="chalBtn")return Fo();if(n.id==="prBtn")return Mi();const payTaxBtn=n.closest("[data-a=\"paytax\"]");
 if(payTaxBtn){
   const amt=getTaxAmount();
   if(o.money<amt){C("bad");M(`Không đủ tiền trong két! Cần ${y(amt)} để nộp thuế.`);return}
@@ -655,6 +655,234 @@ function getServerAnnouncementBannerHtml() {
 
 
 // --- HỘP THƯ TIN NHẮN GỬI CHO ADMIN ---
+// --- NỀN TẢNG CHAT TRỰC TIẾP 1-1 VỚI ADMIN (MESSENGER CHAT PLATFORM) ---
+let liveChatPollTimer = null;
+let currentChatConvId = "";
+
+function getChatConversationId() {
+  const u = localStorage.getItem("tiemMiCayUser");
+  if (u) return "user:" + u.trim().toLowerCase();
+  if (o.storeCode) return "code:" + o.storeCode.trim().toUpperCase();
+  let cid = localStorage.getItem("tiemMiCayChatId");
+  if (!cid) {
+    cid = "guest_" + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem("tiemMiCayChatId", cid);
+  }
+  return cid;
+}
+
+function getChatDisplayName() {
+  const u = localStorage.getItem("tiemMiCayUser");
+  if (u) return u;
+  if (o.shopName) return o.shopName;
+  return "Chủ Quán Mì";
+}
+
+function formatChatTime(ts) {
+  if (!ts) return "";
+  const d = new Date(ts * 1000);
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+async function showLiveChatModal() {
+  currentChatConvId = getChatConversationId();
+  const displayName = getChatDisplayName();
+  const storeCode = o.storeCode || "";
+  const isDark = (typeof os === "function" && os());
+
+  X(`
+    <div style="margin:-14px -14px 0;border-radius:18px 18px 0 0;overflow:hidden;">
+      <!-- MESSENGER HEADER -->
+      <div style="background:linear-gradient(135deg, #7A283C, #5A1E2C);color:#FFF;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.2);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="position:relative;width:40px;height:40px;border-radius:50%;background:#FFF;display:grid;place-items:center;font-size:22px;box-shadow:0 2px 6px rgba(0,0,0,0.25);">
+            🍜
+            <span style="position:absolute;bottom:0;right:0;width:11px;height:11px;background:#10B981;border:2px solid #FFF;border-radius:50%;"></span>
+          </div>
+          <div style="text-align:left;">
+            <div style="font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px;">
+              <span>Admin Tiệm Mì Cay</span>
+              <span style="font-size:10px;background:#F59E0B;color:#FFF;padding:1px 6px;border-radius:10px;font-weight:700;">Hỗ Trợ 1-1</span>
+            </div>
+            <div style="font-size:11.5px;color:#FCE7F3;opacity:0.9;">🟢 Đang trực tuyến · Phản hồi trực tiếp</div>
+          </div>
+        </div>
+        <button type="button" onclick="loadLiveChatMessages(true)" style="background:rgba(255,255,255,0.18);border:none;color:#FFF;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;" title="Làm mới tin nhắn">🔄</button>
+      </div>
+
+      <!-- USER SUB-INFO -->
+      <div style="background:${isDark ? '#331B24' : '#FFF3D6'};padding:6px 14px;font-size:11.5px;color:${isDark ? '#F5D0D6' : '#8A5A44'};display:flex;justify-content:space-between;border-bottom:1px solid ${isDark ? '#4A2633' : '#FDE68A'};">
+        <span>👤 Bạn: <b>${V(displayName)}</b></span>
+        ${storeCode ? `<span>🔑 Mã: <code style="background:rgba(0,0,0,0.1);padding:1px 5px;border-radius:4px;">${V(storeCode)}</code></span>` : '<span><i>Chưa có mã tiệm</i></span>'}
+      </div>
+
+      <!-- MESSAGES THREAD (SCROLLABLE BUBBLES) -->
+      <div id="chatThreadBox" style="height:310px;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;background:${isDark ? '#23141B' : '#F8F9FA'};box-sizing:border-box;">
+        <div style="text-align:center;padding:10px 0;color:#9E9E9E;font-size:12px;">Đang tải cuộc trò chuyện với Admin...</div>
+      </div>
+
+      <!-- QUICK SUGGESTIONS -->
+      <div style="padding:6px 10px;background:${isDark ? '#2B1720' : '#F1F3F5'};display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;border-top:1px solid ${isDark ? '#3D202D' : '#E9ECEF'};">
+        <button type="button" onclick="insertChatQuickMsg('💡 Góp ý: ')" style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">💡 Góp ý</button>
+        <button type="button" onclick="insertChatQuickMsg('🐞 Báo lỗi: ')" style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">🐞 Báo lỗi</button>
+        <button type="button" onclick="insertChatQuickMsg('🔑 Xin hỗ trợ: ')" style="white-space:nowrap;padding:4px 10px;font-size:11.5px;border-radius:14px;background:${isDark ? '#3D222F' : '#FFF'};color:${isDark ? '#F5EAE7' : '#5A2334'};border:1px solid ${isDark ? '#552F41' : '#DDD'};cursor:pointer;font-family:inherit;">🔑 Hỗ trợ tài khoản</button>
+      </div>
+
+      <!-- COMPOSER FOOTER -->
+      <div style="padding:10px 12px;background:${isDark ? '#281B21' : '#FFF'};border-top:1px solid ${isDark ? '#3E242F' : '#EADBDA'};display:flex;gap:8px;align-items:center;">
+        <input type="text" id="chatInputBox" placeholder="Nhập tin nhắn gửi Admin..." maxlength="1000" style="flex:1;padding:10px 14px;border:1.5px solid ${isDark ? '#4D2B38' : '#E2D3CF'};border-radius:22px;font-size:13.5px;outline:none;background:${isDark ? '#1C1015' : '#FFF'};color:${isDark ? '#FFF' : '#2B1A14'};font-family:inherit;" onkeydown="if(event.key==='Enter')sendLiveChatMessage()">
+        <button type="button" id="chatSendBtn" onclick="sendLiveChatMessage()" style="background:#EF4B3F;color:#FFF;border:none;padding:9px 16px;border-radius:20px;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit;">
+          <span>Gửi</span> <span>✈️</span>
+        </button>
+      </div>
+    </div>
+  `,
+  [
+    ["Đóng", () => {
+      clearInterval(liveChatPollTimer);
+      liveChatPollTimer = null;
+    }]
+  ]);
+
+  loadLiveChatMessages();
+  clearInterval(liveChatPollTimer);
+  liveChatPollTimer = setInterval(() => {
+    if (!d("modal") || d("modal").hidden || !d("chatThreadBox")) {
+      clearInterval(liveChatPollTimer);
+      liveChatPollTimer = null;
+      return;
+    }
+    loadLiveChatMessages(false);
+  }, 4000);
+
+  setTimeout(() => {
+    const inp = d("chatInputBox");
+    if (inp) inp.focus();
+  }, 100);
+}
+
+function insertChatQuickMsg(prefix) {
+  const inp = d("chatInputBox");
+  if (inp) {
+    inp.value = prefix + inp.value.replace(/^(💡 Góp ý: |🐞 Báo lỗi: |🔑 Xin hỗ trợ: )/, '');
+    inp.focus();
+  }
+}
+
+async function loadLiveChatMessages(scrollDown = true) {
+  const box = d("chatThreadBox");
+  if (!box || !currentChatConvId) return;
+
+  try {
+    const res = await fetch("/api/chat/messages?conversation_id=" + encodeURIComponent(currentChatConvId));
+    if (res.ok) {
+      const data = await res.json();
+      const msgs = data.messages || [];
+      renderLiveChatBubbles(msgs, scrollDown);
+    }
+  } catch (e) {}
+}
+
+function renderLiveChatBubbles(messages, forceScroll = true) {
+  const box = d("chatThreadBox");
+  if (!box) return;
+
+  const isDark = (typeof os === "function" && os());
+  const welcomeHtml = `
+    <div style="display:flex;gap:8px;align-items:flex-start;max-width:85%;">
+      <div style="width:32px;height:32px;border-radius:50%;background:#EF4B3F;color:#FFF;display:grid;place-items:center;font-size:16px;flex-shrink:0;">👑</div>
+      <div>
+        <div style="font-size:10.5px;color:${isDark ? '#C8B2AC' : '#8A5A44'};margin-bottom:2px;font-weight:700;">Admin Quản Trị</div>
+        <div style="background:${isDark ? '#361F28' : '#EAE8E7'};color:${isDark ? '#F5EAE7' : '#2B1A14'};padding:9px 13px;border-radius:16px 16px 16px 4px;font-size:13px;line-height:1.45;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+          Chào bạn! Mình là Admin Tiệm Mì Cay 🍜. Bạn có góp ý tính năng mới, báo lỗi hoặc cần hỗ trợ tài khoản thì nhắn cho mình ở đây nha! Mình sẽ trả lời sớm nhất có thể.
+        </div>
+      </div>
+    </div>
+  `;
+
+  if (!messages.length) {
+    box.innerHTML = welcomeHtml;
+    return;
+  }
+
+  const bubblesHtml = messages.map(m => {
+    const isAdmin = (m.sender_type === "admin");
+    const timeStr = formatChatTime(m.created_at);
+
+    if (isAdmin) {
+      return `
+        <div style="display:flex;gap:8px;align-items:flex-start;max-width:85%;">
+          <div style="width:32px;height:32px;border-radius:50%;background:#EF4B3F;color:#FFF;display:grid;place-items:center;font-size:16px;flex-shrink:0;">👑</div>
+          <div>
+            <div style="font-size:10.5px;color:${isDark ? '#C8B2AC' : '#8A5A44'};margin-bottom:2px;font-weight:700;">Admin Quản Trị <small style="font-weight:400;opacity:0.8;">· ${timeStr}</small></div>
+            <div style="background:${isDark ? '#361F28' : '#EAE8E7'};color:${isDark ? '#F5EAE7' : '#2B1A14'};padding:9px 13px;border-radius:16px 16px 16px 4px;font-size:13px;line-height:1.45;word-break:break-word;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+              ${V(m.message)}
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      return `
+        <div style="display:flex;justify-content:flex-end;margin-left:auto;max-width:85%;">
+          <div style="text-align:right;">
+            <div style="font-size:10.5px;color:${isDark ? '#A8928D' : '#888'};margin-bottom:2px;"><small>${timeStr}</small></div>
+            <div style="background:linear-gradient(135deg, #EF4B3F, #D32F2F);color:#FFF;padding:9px 13px;border-radius:16px 16px 4px 16px;font-size:13px;line-height:1.45;word-break:break-word;box-shadow:0 2px 6px rgba(239,75,63,0.3);text-align:left;">
+              ${V(m.message)}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  }).join("");
+
+  box.innerHTML = welcomeHtml + bubblesHtml;
+  if (forceScroll) {
+    box.scrollTop = box.scrollHeight;
+  }
+}
+
+async function sendLiveChatMessage() {
+  const inp = d("chatInputBox");
+  const btn = d("chatSendBtn");
+  const msg = (inp?.value || "").trim();
+  if (!msg) return;
+
+  const convId = currentChatConvId || getChatConversationId();
+  const displayName = getChatDisplayName();
+  const storeCode = o.storeCode || "";
+
+  if (btn) btn.disabled = true;
+  inp.value = "";
+
+  try {
+    const res = await fetch("/api/chat/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        conversation_id: convId,
+        sender_name: displayName,
+        store_code: storeCode,
+        message: msg
+      })
+    });
+    if (res.ok) {
+      C("tap");
+      loadLiveChatMessages(true);
+    } else {
+      inp.value = msg;
+      M("Không gửi được tin nhắn, thử lại nhé!");
+    }
+  } catch (e) {
+    inp.value = msg;
+    M("Lỗi kết nối mạng!");
+  } finally {
+    if (btn) btn.disabled = false;
+    inp.focus();
+  }
+}
+
 function showAdminInboxModal() {
   const curUser = localStorage.getItem("tiemMiCayUser") || o.shopName || "";
   const curCode = o.storeCode || "";
