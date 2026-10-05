@@ -108,19 +108,32 @@ module.exports = async (req, res) => {
         created_at BIGINT,
         is_read_by_admin INT DEFAULT 0,
         is_read_by_user INT DEFAULT 0
-      );
-      CREATE INDEX IF NOT EXISTS idx_chat_conv ON chat_messages(conversation_id, created_at);
+      )
+    `;
+  } catch (e) {}
+
+  try {
+    await sql`
+      CREATE INDEX IF NOT EXISTS idx_chat_conv ON chat_messages(conversation_id, created_at)
+    `;
+  } catch (e) {}
+
+  try {
+    await sql`
       CREATE TABLE IF NOT EXISTS admin_messages (
         id SERIAL PRIMARY KEY,
         sender TEXT,
         store_code TEXT,
         topic TEXT,
         content TEXT,
-        status TEXT DEFAULT 'pending',
+        status TEXT DEFAULT pending,
         created_at BIGINT,
         updated_at BIGINT
       )
     `;
+  } catch (e) {}
+
+  try {
     await sql`
       CREATE TABLE IF NOT EXISTS game_config (
         key TEXT PRIMARY KEY,
