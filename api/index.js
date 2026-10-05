@@ -57,6 +57,59 @@ const DEFAULT_GAME_CONFIG = {
   taxBaseRate: 50000
 };
 
+async function autoFinalizeCompletedWeeks(sql) {
+  try {
+    const nowSec = Math.floor(Date.now() / 1000);
+    // 1. Check last week (which has already ended)
+    const lastWeek = getWeekBounds(new Date(Date.now() - 7 * 86400000));
+
+    // Check if last week is already in weekly_hall_of_fame
+    const existing = await sql`
+      SELECT count(*) FROM weekly_hall_of_fame WHERE week_key = ${lastWeek.weekKey}
+    `;
+
+    if (Number(existing[0]?.count || 0) === 0) {
+      // Find top 3 from challenges for last week
+      const topRows = await sql`
+        SELECT id, SUM(score) as s, COUNT(*) as rounds
+        FROM challenges
+        WHERE created_at >= ${lastWeek.startSec} AND created_at <= ${lastWeek.endSec}
+        GROUP BY id
+        ORDER BY s DESC
+        LIMIT 3
+      `;
+
+      if (topRows.length > 0) {
+        for (let idx = 0; idx < topRows.length; idx++) {
+          const r = topRows[idx];
+          const rank = idx + 1;
+          const reward_money = rank === 1 ? 1000000 : (rank === 2 ? 300000 : 100000);
+          const custom_title = rank === 1 ? '👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC' : (rank === 2 ? '🥈 Á QUÂN BẬC THẦY HỎA LỰC' : '🥉 QUÝ QUÂN TINH ANH NẤU MÌ');
+          const nameRows = await sql`SELECT name FROM leaderboard WHERE id = ${r.id}`;
+          const shopName = nameRows[0]?.name || "Tiệm Mì Cay";
+          const rowId = `${lastWeek.weekKey}_${rank}`;
+
+          await sql`
+            INSERT INTO weekly_hall_of_fame (
+              id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
+            ) VALUES (
+              ${rowId}, ${lastWeek.weekKey}, ${lastWeek.weekTitle}, ${rank}, ${r.id}, ${shopName}, ${Number(r.s)}, ${reward_money}, ${custom_title}, '', ${nowSec}
+            )
+            ON CONFLICT (id) DO UPDATE SET
+              shop_name = EXCLUDED.shop_name,
+              total_score = EXCLUDED.total_score,
+              reward_money = EXCLUDED.reward_money,
+              custom_title = EXCLUDED.custom_title,
+              created_at = EXCLUDED.created_at
+          `;
+        }
+      }
+    }
+  } catch (e) {
+    console.error("autoFinalizeCompletedWeeks error:", e);
+  }
+}
+
 function getTodayChalDate() {
   const now = new Date();
   return `${now.getDate()}/${now.getMonth() + 1}`;
@@ -225,6 +278,10 @@ module.exports = async (req, res) => {
         const shopId = urlObj.searchParams.get("id") || "";
         const chalDay = getTodayChalDate();
         const curWeek = getWeekBounds();
+        await autoFinalizeCompletedWeeks(sql);
+
+        // Automatically finalize any completed weeks and push top 1-2-3 to Hall of Fame
+        await autoFinalizeCompletedWeeks(sql);
 
         // Auto-migration: ensure weekly_hall_of_fame table exists
         try {
@@ -378,11 +435,10 @@ module.exports = async (req, res) => {
               FROM weekly_hall_of_fame
               WHERE shop_id = ${shopId}
               ORDER BY created_at DESC
-              LIMIT 1
+              LIMIT 10
             `;
-            if (rewardRows.length) {
-              const r = rewardRows[0];
-              const claimed = (r.claimed_shops || "").split(",").filter(Boolean);
+            for (const r of rewardRows) {
+              const claimed = (r.claimed_shops || "").split(",").map(x => x.trim()).filter(Boolean);
               if (!claimed.includes(shopId)) {
                 unclaimed_reward = {
                   id: r.id,
@@ -392,6 +448,7 @@ module.exports = async (req, res) => {
                   money: Number(r.reward_money),
                   custom_title: r.custom_title
                 };
+                break;
               }
             }
           } catch (e) {}
@@ -776,6 +833,59 @@ module.exports = async (req, res) => {
           updatedCount,
           config: cfg,
           updated_at: nowT
+        });
+      }
+
+      // POST /api/admin/chal/finalize (Admin: Finalize and Award Week to Hall of Fame)
+      if (path === "/api/admin/chal/finalize") {
+        const scope = String(body.scope || "last").trim(); // 'last' or 'current'
+        const weekToFinalize = (scope === "current") ? getWeekBounds() : getWeekBounds(new Date(Date.now() - 7 * 86400000));
+        const nowSec = Math.floor(Date.now() / 1000);
+
+        const topRows = await sql`
+          SELECT id, SUM(score) as s, COUNT(*) as rounds
+          FROM challenges
+          WHERE created_at >= ${weekToFinalize.startSec} AND created_at <= ${weekToFinalize.endSec}
+          GROUP BY id
+          ORDER BY s DESC
+          LIMIT 3
+        `;
+
+        if (!topRows.length) {
+          return res.json({ ok: false, message: `Tuần ${weekToFinalize.weekTitle} chưa có lượt thi đấu nào để trao giải.` });
+        }
+
+        const results = [];
+        for (let idx = 0; idx < topRows.length; idx++) {
+          const r = topRows[idx];
+          const rank = idx + 1;
+          const reward_money = rank === 1 ? 1000000 : (rank === 2 ? 300000 : 100000);
+          const custom_title = rank === 1 ? '👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC' : (rank === 2 ? '🥈 Á QUÂN BẬC THẦY HỎA LỰC' : '🥉 QUÝ QUÂN TINH ANH NẤU MÌ');
+          const nameRows = await sql`SELECT name FROM leaderboard WHERE id = ${r.id}`;
+          const shopName = nameRows[0]?.name || "Tiệm Mì Cay";
+          const rowId = `${weekToFinalize.weekKey}_${rank}`;
+
+          await sql`
+            INSERT INTO weekly_hall_of_fame (
+              id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
+            ) VALUES (
+              ${rowId}, ${weekToFinalize.weekKey}, ${weekToFinalize.weekTitle}, ${rank}, ${r.id}, ${shopName}, ${Number(r.s)}, ${reward_money}, ${custom_title}, '', ${nowSec}
+            )
+            ON CONFLICT (id) DO UPDATE SET
+              shop_name = EXCLUDED.shop_name,
+              total_score = EXCLUDED.total_score,
+              reward_money = EXCLUDED.reward_money,
+              custom_title = EXCLUDED.custom_title,
+              created_at = EXCLUDED.created_at
+          `;
+          results.push({ rank, shopName, id: r.id, score: Number(r.s), reward_money });
+        }
+
+        return res.json({
+          ok: true,
+          message: `Đã kết thúc và đẩy Top 1-2-3 của ${weekToFinalize.weekTitle} lên Bảng Vinh Danh thành công!`,
+          week: weekToFinalize,
+          results
         });
       }
 

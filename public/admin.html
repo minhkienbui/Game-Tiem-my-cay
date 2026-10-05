@@ -729,10 +729,14 @@
       <div class="sec-panel" style="margin-bottom:20px;background:#FFF9F2;border:1.5px solid #FFD8A8;">
         <div class="panel-head" style="margin-bottom:10px;">
           <div>
-            <h3 style="color:#C62828;margin:0;">🏆 Bảng Vinh Danh Tuần & Giải Thưởng Tiền Mặt</h3>
-            <p style="font-size:12.5px;color:#7E655B;margin:4px 0 0;">Cơ cấu giải thưởng sau 1 tuần tổng điểm: 🥇 Top 1: 1.000.000đ · 🥈 Top 2: 300.000đ · 🥉 Top 3: 100.000đ (Tiền két, không tăng XP)</p>
+            <h3 style="color:#C62828;margin:0;">🏆 Bảng Vinh Danh Tuần & Trao Thưởng Tự Động</h3>
+            <p style="font-size:12.5px;color:#7E655B;margin:4px 0 0;">Hệ thống tự động đẩy Top 1 (1.000.000đ) - Top 2 (300.000đ) - Top 3 (100.000đ) lên Bảng Vinh Danh sau khi hết tuần!</p>
           </div>
-          <button class="btn-primary" onclick="loadAllData()" style="padding:6px 14px;font-size:12px;">🔄 Cập Nhật</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="btn-act" onclick="adminFinalizeTournament('last')" style="background:#FFF3D6;color:#B45309;border:1.5px solid #FCD34D;font-weight:700;font-size:12px;">🏆 Trao Thưởng Tuần Vừa Qua</button>
+            <button class="btn-act" onclick="adminFinalizeTournament('current')" style="background:#E8F5E9;color:#2E7D32;border:1.5px solid #A5D6A7;font-weight:700;font-size:12px;">⚡ Chốt & Vinh Danh Tuần Này Ngay</button>
+            <button class="btn-primary" onclick="loadAllData()" style="padding:6px 14px;font-size:12px;">🔄 Làm Mới</button>
+          </div>
         </div>
         <div class="table-responsive">
           <table>
@@ -2039,6 +2043,31 @@
     }
 
     // --- MASTER DATA LOADER ---
+    async function adminFinalizeTournament(scope = 'last') {
+      const scopeText = (scope === 'current') ? 'tuần hiện tại' : 'tuần vừa kết thúc';
+      if (!confirm("Bạn có muốn chốt điểm và tự động đẩy Top 1 - 2 - 3 của " + scopeText + " lên Bảng Vinh Danh, đồng thời phát thưởng tiền mặt cho người chơi?")) return;
+
+      try {
+        const res = await fetch("/api/admin/chal/finalize", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Code": getAdminAuthCode() || "09659"
+          },
+          body: JSON.stringify({ scope })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast("✓ " + (data.message || "Đã đẩy Top 1-2-3 lên Bảng Vinh Danh thành công!"));
+          loadAllData();
+        } else {
+          alert("Thông báo: " + (data.message || data.error || "Chưa có lượt thi để chốt"));
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
     async function loadAllData() {
       try {
         // 1. Load Leaderboard

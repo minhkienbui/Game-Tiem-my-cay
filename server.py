@@ -303,6 +303,43 @@ DEFAULT_GAME_CONFIG = {
     "taxBaseRate": 50000
 }
 
+def auto_finalize_completed_weeks():
+    try:
+        now_sec = int(time.time())
+        # Check last week
+        start_sec, end_sec, week_key, week_title = get_week_bounds(datetime.now() - timedelta(days=7))
+        conn = DB()
+        cur = conn
+        cur.execute("SELECT COUNT(*) FROM weekly_hall_of_fame WHERE week_key = ?", (week_key,))
+        cnt = cur.fetchone()[0]
+        if cnt == 0:
+            cur.execute("""
+                SELECT id, SUM(score) as s, COUNT(*) as rounds
+                FROM challenges
+                WHERE created_at >= ? AND created_at <= ?
+                GROUP BY id
+                ORDER BY s DESC
+                LIMIT 3
+            """, (start_sec, end_sec))
+            top_rows = cur.fetchall()
+            for idx, r in enumerate(top_rows):
+                rank = idx + 1
+                reward_money = 1000000 if rank == 1 else (300000 if rank == 2 else 100000)
+                custom_title = "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC" if rank == 1 else ("🥈 Á QUÂN BẬC THẦY HỎA LỰC" if rank == 2 else "🥉 QUÝ QUÂN TINH ANH NẤU MÌ")
+                cur.execute("SELECT name FROM leaderboard WHERE id = ?", (r[0],))
+                name_row = cur.fetchone()
+                shop_name = name_row[0] if name_row else "Tiệm Mì Cay"
+                row_id = f"{week_key}_{rank}"
+                cur.execute("""
+                    INSERT OR REPLACE INTO weekly_hall_of_fame (
+                        id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)
+                """, (row_id, week_key, week_title, rank, r[0], shop_name, r[1], reward_money, custom_title, now_sec))
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        print("auto_finalize_completed_weeks error:", e)
+
 def get_today_chal_date():
     now = datetime.now()
     return f"{now.day}/{now.month}"
@@ -454,6 +491,7 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
         # 2. GET /api/chal (Tournament Challenge)
         if path == "/api/chal":
+            auto_finalize_completed_weeks()
             shop_id = params.get("id", [""])[0]
             chal_day = get_today_chal_date()
             start_sec, end_sec, week_key, week_title = get_week_bounds()
@@ -885,6 +923,52 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
         # POST /api/inbox (Public Send Message to Admin)
                 # POST /api/chat/send (User: Send message to Admin 1-on-1)
+                # POST /api/admin/chal/finalize (Admin: Finalize Week and Award Top 1-2-3)
+        if path == "/api/admin/chal/finalize":
+            scope = str(body.get("scope", "last")).strip()
+            target_date = datetime.now() if scope == "current" else (datetime.now() - timedelta(days=7))
+            start_sec, end_sec, week_key, week_title = get_week_bounds(target_date)
+            now_sec = int(time.time())
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                SELECT id, SUM(score) as s, COUNT(*) as rounds
+                FROM challenges
+                WHERE created_at >= ? AND created_at <= ?
+                GROUP BY id
+                ORDER BY s DESC
+                LIMIT 3
+            """, (start_sec, end_sec))
+            top_rows = cur.fetchall()
+            if not top_rows:
+                conn.close()
+                return self.send_json({"ok": False, "message": f"Tuần {week_title} chưa có lượt thi đấu nào để trao giải."})
+
+            results = []
+            for idx, r in enumerate(top_rows):
+                rank = idx + 1
+                reward_money = 1000000 if rank == 1 else (300000 if rank == 2 else 100000)
+                custom_title = "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC" if rank == 1 else ("🥈 Á QUÂN BẬC THẦY HỎA LỰC" if rank == 2 else "🥉 QUÝ QUÂN TINH ANH NẤU MÌ")
+                cur.execute("SELECT name FROM leaderboard WHERE id = ?", (r[0],))
+                name_row = cur.fetchone()
+                shop_name = name_row[0] if name_row else "Tiệm Mì Cay"
+                row_id = f"{week_key}_{rank}"
+                cur.execute("""
+                    INSERT OR REPLACE INTO weekly_hall_of_fame (
+                        id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?)
+                """, (row_id, week_key, week_title, rank, r[0], shop_name, r[1], reward_money, custom_title, now_sec))
+                results.append({"rank": rank, "shopName": shop_name, "id": r[0], "score": r[1], "reward_money": reward_money})
+
+            conn.commit()
+            conn.close()
+            return self.send_json({
+                "ok": True,
+                "message": f"Đã kết thúc và đẩy Top 1-2-3 của {week_title} lên Bảng Vinh Danh thành công!",
+                "week_key": week_key,
+                "results": results
+            })
+
         if path == "/api/chat/send":
             conv_id = str(body.get("conversation_id", "")).strip()
             sender_name = str(body.get("sender_name") or body.get("sender") or "Khách").strip()[:50]
