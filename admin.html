@@ -328,6 +328,49 @@
       gap: 16px;
     }
 
+    /* Mobile & Responsive Layout for Admin */
+    @media (max-width: 900px) {
+      body {
+        flex-direction: column;
+      }
+      aside {
+        width: 100%;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+      }
+      .brand {
+        padding: 14px 16px;
+      }
+      .nav-links {
+        display: flex;
+        overflow-x: auto;
+        padding: 8px 12px;
+        gap: 6px;
+        scrollbar-width: none;
+      }
+      .nav-links::-webkit-scrollbar { display: none; }
+      .nav-links li a {
+        padding: 8px 14px;
+        white-space: nowrap;
+        font-size: 12.5px;
+        border-radius: 8px;
+        border-left: none;
+      }
+      .nav-links li a:hover, .nav-links li.active a {
+        border-left: none;
+        background: var(--sidebar-hover);
+        border-bottom: 3px solid var(--accent);
+      }
+      .back-game {
+        display: none;
+      }
+      main {
+        padding: 16px 14px;
+      }
+      .header-title h2 {
+        font-size: 20px;
+      }
+    }
+
     /* Toast */
     #admToast {
       position: fixed;
@@ -388,6 +431,7 @@
     </div>
     <ul class="nav-links">
       <li class="active"><a href="#overview" onclick="showTab('overview')">📊 Tổng Quan</a></li>
+      <li><a href="#inbox" onclick="showTab('inbox')">📬 Hộp Thư Tin Nhắn <span class="badge-cnt" id="sideInboxCount" style="background:#E65100;display:none;">0</span></a></li>
       <li><a href="#users" onclick="showTab('users')">👥 Quản Lý Người Dùng <span class="badge-cnt" id="sideUserCount">0</span></a></li>
       <li><a href="#leaderboard" onclick="showTab('leaderboard')">🏆 Bảng Xếp Hạng <span class="badge-cnt" id="sideShopCount">0</span></a></li>
       <li><a href="#challenges" onclick="showTab('challenges')">🍜 Giải Mì & Vinh Danh</a></li>
@@ -441,6 +485,12 @@
           <h4>Doanh Thu Hệ Thống</h4>
           <div class="val" id="metricTotalProfit">0đ</div>
           <small>Tổng tiền két toàn hệ thống</small>
+        </div>
+        <div class="card-metric">
+          <div class="c-icon">📬</div>
+          <h4>Hộp Thư Tin Nhắn</h4>
+          <div class="val" id="metricInboxPending">0</div>
+          <small>Tin nhắn chờ xử lý</small>
         </div>
         <div class="card-metric">
           <div class="c-icon">💾</div>
@@ -500,6 +550,54 @@
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+        <!-- TAB: INBOX MESSAGES (HỘP THƯ NGƯỜI CHƠI) -->
+    <div id="tab-inbox" class="tab-pane" style="display:none;">
+      <div class="sec-panel">
+        <div class="panel-head">
+          <div>
+            <h3>📬 Hộp Thư Phản Hồi & Yêu Cầu Hỗ Trợ Từ Người Chơi</h3>
+            <p style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Xem xét, xử lý và đánh dấu trạng thái các góp ý, báo lỗi và phản hồi gửi về cho Admin</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="inboxStatusFilter" onchange="filterInboxTable()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;font-weight:700;">
+              <option value="all">Tất cả trạng thái</option>
+              <option value="pending" selected>⏳ Chưa xử lý (Cần duyệt)</option>
+              <option value="resolved">✓ Đã xử lý (Xong)</option>
+            </select>
+            <select id="inboxTopicFilter" onchange="filterInboxTable()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;">
+              <option value="all">Tất cả chủ đề</option>
+              <option value="gop_y">💡 Góp ý tính năng</option>
+              <option value="bao_loi">🐞 Báo lỗi game</option>
+              <option value="ho_tro">🔑 Hỗ trợ tài khoản</option>
+              <option value="khac">💬 Phản hồi khác</option>
+            </select>
+            <input type="text" id="inboxSearchInput" placeholder="🔍 Tìm theo người gửi, mã tiệm, nội dung..." oninput="filterInboxTable()" style="padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:240px;">
+            <button class="btn-primary" onclick="loadAllData()" style="padding:8px 14px;font-size:12.5px;">🔄 Làm Mới</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Thời Gian Gửi</th>
+                <th>Người Gửi / Tên Quán</th>
+                <th>Mã Cửa Hàng</th>
+                <th>Chủ Đề</th>
+                <th>Nội Dung Tin Nhắn</th>
+                <th>Trạng Thái</th>
+                <th>Thao Tác Duyệt</th>
+              </tr>
+            </thead>
+            <tbody id="inboxBody">
+              <tr><td colspan="8" style="text-align:center;">Đang tải hộp thư...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -987,6 +1085,7 @@
 
       const titleMap = {
         overview: ["📊 Tổng Quan Hệ Thống", "Báo cáo thời gian thực về dữ liệu người chơi, doanh thu và hoạt động máy chủ."],
+        inbox: ["📬 Hộp Thư Tin Nhắn Người Chơi", "Xem xét, duyệt và đánh dấu trạng thái các góp ý, báo lỗi và yêu cầu hỗ trợ từ người chơi."],
         users: ["👥 Quản Lý Người Dùng & Bản Lưu", "Toàn bộ tài khoản và tiến trình quán được đồng bộ an toàn trên Neon Serverless Postgres."],
         leaderboard: ["🏆 Quản Lý Bảng Xếp Hạng", "Bảng xếp hạng tổng doanh thu và đánh giá các tiệm mì toàn quốc."],
         challenges: ["🍜 Giải Mì & Bảng Vinh Danh", "Theo dõi kết quả Giải Mì tuần và danh sách quán quân nhận thưởng tiền mặt."],
@@ -1006,6 +1105,147 @@
     }
 
     // --- USERS MANAGEMENT ---
+    let allInboxMessages = [];
+
+    function renderInboxTable(messages) {
+      const tbody = document.getElementById("inboxBody");
+      if (!tbody) return;
+      if (!messages || !messages.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">Không có tin nhắn nào phù hợp bộ lọc.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = messages.map(m => {
+        const isPending = (m.status === "pending");
+        const statusBadge = isPending
+          ? '<span style="background:#FFE8CC;color:#D9480F;padding:4px 10px;border-radius:12px;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:4px;">⏳ Chưa xử lý</span>'
+          : '<span style="background:#D3F9D8;color:#2B8A3E;padding:4px 10px;border-radius:12px;font-weight:800;font-size:12px;display:inline-flex;align-items:center;gap:4px;">✓ Đã xử lý</span>';
+
+        const actionBtn = isPending
+          ? `<button class="btn-act" style="background:#E8F5E9;color:#2E7D32;border:1.5px solid #A5D6A7;font-weight:700;" onclick="updateMessageStatus(${m.id}, 'resolved')">✓ Xác Nhận Đã Xử Lý</button>`
+          : `<button class="btn-act" style="background:#FFF9DB;color:#F08C00;border:1.5px solid #FFE066;font-weight:600;" onclick="updateMessageStatus(${m.id}, 'pending')">↩️ Đánh Dấu Chưa Xử Lý</button>`;
+
+        const timeStr = m.created_at ? new Date(m.created_at * 1000).toLocaleString("vi-VN") : "Mới gửi";
+
+        return `
+          <tr style="${isPending ? 'background:#FFFDF9;' : ''}">
+            <td><code>#${m.id}</code></td>
+            <td><small style="color:var(--text-muted);">${timeStr}</small></td>
+            <td><b style="color:var(--primary);font-size:13.5px;">${escapeHtml(m.sender)}</b></td>
+            <td>
+              ${m.store_code ? `
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <code style="background:#FFF3D6;color:#C62828;padding:2px 6px;border-radius:4px;font-weight:700;font-size:12px;">${escapeHtml(m.store_code)}</code>
+                  <button class="btn-act" style="padding:2px 6px;font-size:11px;" title="Tra cứu tiệm này" onclick="lookupStoreCodeFromInbox('${escapeHtml(m.store_code)}')">🔍</button>
+                </div>
+              ` : '<span style="color:#AAA;">Không có</span>'}
+            </td>
+            <td><span class="badge" style="background:#F1F3F5;color:var(--text);font-size:12px;">${escapeHtml(m.topic)}</span></td>
+            <td style="max-width:320px;">
+              <div style="font-size:13px;line-height:1.45;word-break:break-word;background:#F8F9FA;padding:8px 10px;border-radius:8px;border:1px solid #E9ECEF;cursor:pointer;" title="Bấm để xem toàn bộ" onclick="viewFullMessageContent(${m.id})">
+                ${escapeHtml(m.content)}
+              </div>
+            </td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                ${actionBtn}
+                <button class="btn-act btn-del" onclick="deleteInboxMessage(${m.id})" title="Xóa tin nhắn này">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function filterInboxTable() {
+      const q = (document.getElementById("inboxSearchInput")?.value || "").toLowerCase().trim();
+      const statusF = document.getElementById("inboxStatusFilter")?.value || "all";
+      const topicF = document.getElementById("inboxTopicFilter")?.value || "all";
+
+      let filtered = allInboxMessages.filter(m => {
+        if (statusF !== "all" && m.status !== statusF) return false;
+
+        if (topicF === "gop_y" && !m.topic.includes("Góp ý")) return false;
+        if (topicF === "bao_loi" && !m.topic.includes("Báo lỗi")) return false;
+        if (topicF === "ho_tro" && !m.topic.includes("Hỗ trợ")) return false;
+        if (topicF === "khac" && !m.topic.includes("khác")) return false;
+
+        if (q) {
+          const matchQ = (m.sender || "").toLowerCase().includes(q) ||
+                         (m.store_code || "").toLowerCase().includes(q) ||
+                         (m.content || "").toLowerCase().includes(q) ||
+                         (m.topic || "").toLowerCase().includes(q) ||
+                         String(m.id).includes(q);
+          if (!matchQ) return false;
+        }
+
+        return true;
+      });
+
+      renderInboxTable(filtered);
+    }
+
+    async function updateMessageStatus(id, newStatus) {
+      try {
+        const res = await fetch("/api/admin/inbox/status", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Code": getAdminAuthCode() || "09659"
+          },
+          body: JSON.stringify({ id, status: newStatus })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          showToast(newStatus === "resolved" ? "✓ Đã đánh dấu tin nhắn ĐÃ XỬ LÝ!" : "✓ Đã đánh dấu tin nhắn CHƯA XỬ LÝ!");
+          loadAllData();
+        } else {
+          alert("Lỗi: " + (d.error || "Không thể cập nhật trạng thái"));
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    async function deleteInboxMessage(id) {
+      if (!confirm("Bạn có chắc chắn muốn xóa tin nhắn #" + id + "?")) return;
+      try {
+        const res = await fetch("/api/admin/inbox/delete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Code": getAdminAuthCode() || "09659"
+          },
+          body: JSON.stringify({ id })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          showToast("✓ Đã xóa tin nhắn #" + id);
+          loadAllData();
+        } else {
+          alert("Lỗi xóa tin nhắn.");
+        }
+      } catch (e) {
+        showToast("Lỗi kết nối máy chủ!");
+      }
+    }
+
+    function viewFullMessageContent(id) {
+      const msg = allInboxMessages.find(m => m.id === id);
+      if (!msg) return;
+      alert("Chi tiết tin nhắn #" + msg.id + " từ " + msg.sender + " (" + (msg.store_code || "Không có mã") + "):\n\nChủ đề: " + msg.topic + "\nThời gian: " + new Date(msg.created_at * 1000).toLocaleString("vi-VN") + "\nTrạng thái: " + (msg.status === "resolved" ? "ĐÃ XỬ LÝ" : "CHƯA XỬ LÝ") + "\n\nNội dung:\n" + msg.content);
+    }
+
+    function lookupStoreCodeFromInbox(code) {
+      showTab("users");
+      const inp = document.getElementById("lookupCodeInput");
+      if (inp) {
+        inp.value = code;
+        lookupStoreCode();
+      }
+    }
+
     function renderUsersTable(users) {
       const tbody = document.getElementById("usersBody");
       if (!tbody) return;
@@ -1621,6 +1861,25 @@
             </tr>
           `).join("") : '<tr><td colspan="8" style="text-align:center;">Chưa có lượt thi nào hôm nay.</td></tr>';
         }
+
+        // 5. Load Inbox Messages
+        try {
+          const resInbox = await fetch("/api/admin/inbox", {
+            headers: { "X-Admin-Code": getAdminAuthCode() || "09659" }
+          });
+          if (resInbox.ok) {
+            const dataInbox = await resInbox.json();
+            allInboxMessages = dataInbox.messages || [];
+            const sideInboxEl = document.getElementById("sideInboxCount");
+            if (sideInboxEl) {
+              sideInboxEl.textContent = dataInbox.pending_count || 0;
+              sideInboxEl.style.display = (dataInbox.pending_count > 0) ? "inline-block" : "none";
+            }
+            const metricInboxEl = document.getElementById("metricInboxPending");
+            if (metricInboxEl) metricInboxEl.textContent = dataInbox.pending_count || 0;
+            filterInboxTable();
+          }
+        } catch (e) {}
 
         // 4. Load Admin Cloud Saves & Pranks
         const resAdmin = await fetch("/api/admin/overview", {

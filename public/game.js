@@ -24,9 +24,14 @@ function Bn(){const A=os(),n=document.documentElement;if(A&&!Bn.done){Bn.done=1;
       <div style="font-size:12.5px;color:#FFE082;font-weight:700;line-height:1.45;max-width:320px;margin:4px auto 0;text-shadow:0 1px 3px rgba(0,0,0,0.6);">
         📢 mã tiệm ở trong phần giao diện cửa hàng nhớ lưu tài khoản nhé !!!
       </div>
+      <div style="margin-top:10px;">
+        <button type="button" id="inboxMsgBtn" style="background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.36);color:#FFF;padding:8px 18px;border-radius:24px;font-size:13px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all 0.2s;box-shadow:0 3px 10px rgba(0,0,0,0.25);font-family:inherit;">
+          <span style="font-size:16px;">📬</span> <span>Hộp thư gửi tin nhắn cho Admin</span>
+        </button>
+      </div>
     </div>
     
-  </section>`,d("view").scrollTop=0;const n=()=>{Ta()&&_e(!0),Xn(),C("bell"),Ye(),o.fx==="auto"&&Oe()&&!o.fxTip&&(o.fxTip=!0,z(),setTimeout(()=>M("Máy đang bật giảm chuyển động nên hiệu ứng đang tắt. Bật lại trong Cài đặt, mục Hiệu ứng chuyển động."),700)),o.onboarded?TA():ii(!0,()=>TA())};d("goBtn").onclick=()=>{if(isTaxSealed())return showTaxSeizureModal();La()?n():ei(n)},d("howBtn").onclick=()=>ii(!1),d("regBtn")&&(d("regBtn").onclick=()=>showRegisterModal()),d("loginBtn")&&(d("loginBtn").onclick=()=>showLoginModal()),d("logoutBtn")&&(d("logoutBtn").onclick=()=>handleLogout()),d("recvBtn")&&(d("recvBtn").onclick=Na),d("byeBtn")&&(d("byeBtn").onclick=Ra);const t=()=>{};if(_n){const e=_n;_n="",e==="tamper"?X("<h2>Bản lưu bị chỉnh sửa</h2><p>Dữ liệu lưu trên máy này đã bị sửa tay nên game không dùng được, quán mở lại từ đầu.</p><p>Nếu có mã sao lưu, vào Cài đặt và chọn Khôi phục từ mã.</p>",[["Đã hiểu",t,1]]):e==="refund"?X(`<h2>Quán giờ có cấp</h2><p>Món, trang bị và trang trí nay mở theo cấp quán. Những thứ bạn đã mua vượt cấp hiện tại được hoàn ${y(o.refund||0)} vào két, lên cấp là mua lại được.</p>`,[["Đã hiểu",t,1]]):t()}else t()}const La=()=>(o.terms||0)>=fe,Wa=`<h3>1. Về trò chơi</h3><p>Tiệm Mì Cay là game nấu mì miễn phí, chơi trên trình duyệt, do một nhà phát triển độc lập làm. Game không bán vật phẩm, không nạp tiền, không có quảng cáo và không đổi thưởng.</p>
+  </section>`,d("view").scrollTop=0;const n=()=>{Ta()&&_e(!0),Xn(),C("bell"),Ye(),o.fx==="auto"&&Oe()&&!o.fxTip&&(o.fxTip=!0,z(),setTimeout(()=>M("Máy đang bật giảm chuyển động nên hiệu ứng đang tắt. Bật lại trong Cài đặt, mục Hiệu ứng chuyển động."),700)),o.onboarded?TA():ii(!0,()=>TA())};d("goBtn").onclick=()=>{if(isTaxSealed())return showTaxSeizureModal();La()?n():ei(n)},d("howBtn").onclick=()=>ii(!1),d("regBtn")&&(d("regBtn").onclick=()=>showRegisterModal()),d("loginBtn")&&(d("loginBtn").onclick=()=>showLoginModal()),d("logoutBtn")&&(d("logoutBtn").onclick=()=>handleLogout()),d("recvBtn")&&(d("recvBtn").onclick=Na),d("inboxMsgBtn")&&(d("inboxMsgBtn").onclick=showAdminInboxModal),d("byeBtn")&&(d("byeBtn").onclick=Ra);const t=()=>{};if(_n){const e=_n;_n="",e==="tamper"?X("<h2>Bản lưu bị chỉnh sửa</h2><p>Dữ liệu lưu trên máy này đã bị sửa tay nên game không dùng được, quán mở lại từ đầu.</p><p>Nếu có mã sao lưu, vào Cài đặt và chọn Khôi phục từ mã.</p>",[["Đã hiểu",t,1]]):e==="refund"?X(`<h2>Quán giờ có cấp</h2><p>Món, trang bị và trang trí nay mở theo cấp quán. Những thứ bạn đã mua vượt cấp hiện tại được hoàn ${y(o.refund||0)} vào két, lên cấp là mua lại được.</p>`,[["Đã hiểu",t,1]]):t()}else t()}const La=()=>(o.terms||0)>=fe,Wa=`<h3>1. Về trò chơi</h3><p>Tiệm Mì Cay là game nấu mì miễn phí, chơi trên trình duyệt, do một nhà phát triển độc lập làm. Game không bán vật phẩm, không nạp tiền, không có quảng cáo và không đổi thưởng.</p>
 <h3>2. Tiền và vật phẩm trong game</h3><p>Tiền, món, trang bị, điểm kinh nghiệm và thứ hạng đều là ảo, chỉ dùng trong game. Chúng không quy đổi được ra tiền thật, thẻ cào hay hiện vật. Người chơi cũng không được mua bán chúng với nhau.</p>
 <h3>3. Độ tuổi và sức khỏe</h3><p>Nội dung game phù hợp mọi lứa tuổi. Người dưới 16 tuổi nên chơi khi bố mẹ hoặc người giám hộ biết và đồng ý. Chơi game quá 180 phút mỗi ngày có thể ảnh hưởng xấu đến sức khỏe. Nhớ nghỉ mắt và vận động giữa các ngày bán.</p>
 <h3>4. Tiến trình của bạn</h3><p>Tiến trình lưu trong trình duyệt trên máy bạn. Xóa dữ liệu trình duyệt, dùng tab ẩn danh hoặc đổi máy có thể làm mất tiến trình. Muốn chơi tiếp ở máy hoặc trình duyệt khác, dùng mục Chuyển sang máy khác trong Cài đặt. Hãy dùng mục Sao lưu tiến trình trong Cài đặt để giữ mã khôi phục. Không có mã thì tiệm không lấy lại được tiến trình đã mất.</p>
@@ -97,7 +102,7 @@ e+=`<div class="tax-sec ${tPaid?"paid":"due"}">
   </p>
   ${!tPaid?`<button type="button" class="sbtn pri" data-a="paytax" style="width:100%;padding:9px;font-size:13.5px;font-weight:700;background:var(--ok)">🏛️ Tự Giác Nộp Thuế (${y(tAmt)})</button>`:""}
 </div>`;
-return e+=`<h3>Hôm nay · ngày ${o.day}</h3><div class="ledger">${a||'<p class="note">Chưa chi khoản nào.</p>'}${A.gift?L("Quà","+"+y(A.gift)):""}${(A.oth||[]).length?'<p class="lh">Phát sinh</p>'+_t(A.oth,!0)+_t(A.oth,!1):""}<p class="lh">Trừ lúc đóng cửa</p>${L("Mặt bằng","−"+y(W.rent))}${L(`Điện nước${jn()?` · ${jn()} trang bị`:""}`,"−"+y(c))}${RA.filter(l=>o.staff[l.id]).map(l=>L("Lương "+l.n,"−"+y(l.wage))).join("")}</div>`,e+=Ns(),t.length?(e+="<h3>Các ngày trước</h3>"+t.map((l,s)=>{const h=l.rev-l.cost;return`<details class="dayc"${s?"":" open"}><summary><span>Ngày ${l.day}</span><small>${l.served} tô${l.avg?" · ★ "+l.avg.toFixed(1).replace(".",","):""}</small><b class="${h<0?"neg":"pos"}">${hn(h)}</b></summary>${co(l)}</details>`}).join(""),e):e+'<p class="note">Hết ngày đầu tiên sẽ có sổ chi tiết từng ngày.</p>'}function Ah(){X(`<h2>Đặt tên quán</h2><p>Tối đa 26 ký tự, hiện trên biển hiệu và màn hình chào.</p><input id="nameIn" maxlength="26" value="${V(o.shopName)}" placeholder="Ví dụ: Mì Cay Nhà Cáo" aria-label="Tên quán">`,[["Huỷ",()=>{}],["Lưu tên",()=>{o.shopName=d("nameIn").value.replace(/\s+/g," ").trim().slice(0,26),z(),M("Đã đổi tên quán"),TA()},1]]),setTimeout(()=>{const A=d("nameIn");A&&A.focus()},50)}const so=()=>`<div class="vols">${[["vol","Nhạc nền"],["sfxVol","Âm thanh"]].map(([A,n])=>{const t=Math.round(Ue(o[A])*100);return`<label class="vol"><span>${n}</span><input type="range" min="0" max="100" step="5" value="${t}" data-vol="${A}" aria-label="Âm lượng ${n.toLowerCase()}" style="--p:${t}%"><b>${t}%</b></label>`}).join("")}</div>`;function ho(){document.querySelectorAll("#card [data-vol]").forEach(A=>{const n=A.dataset.vol,t=A.parentNode.querySelector("b"),e=()=>{const a=Math.max(0,Math.min(100,Math.round(+A.value||0)));o[n]=a/100,A.style.setProperty("--p",a+"%"),t&&(t.textContent=a+"%"),n==="vol"&&Kc()};A.addEventListener("input",e),A.addEventListener("change",()=>{e(),z(),n==="sfxVol"&&C("tap")})})}function NA(){X(`<h2>Cài đặt</h2><p>Phiên bản 2.1 · tiến trình lưu trong trình duyệt này. Đổi máy hay trình duyệt thì chọn <b>Chuyển sang máy khác</b>. ${o.lastBackup?`Sao lưu gần nhất: ngày ${o.lastBackup}.`:"Chưa sao lưu lần nào."}</p>${so()}${ms()}<p class="note credit">Nhạc nền: ${jt.map(A=>A.n).join(", ")} của Kevin MacLeod (incompetech.com), giấy phép CC BY 4.0.</p>`,[["📅 Điểm danh hàng ngày",()=>showDailyCheckinModal(),0,1],["🔑 Lưu / Tạo mã cửa hàng",()=>showStoreCodeModal(),0,1],["Chuyển sang máy khác",()=>Xa(),0,1],["Nhận tiệm từ máy khác",()=>Na(),0,1],["Sao lưu tiến trình",()=>ys(),0,1],["Khôi phục từ mã",()=>ws(),0,1],[`Nhạc nền: ${o.music?"Bật":"Tắt"}`,()=>{o.music=!o.music,z(),o.music?Ye():Ba(),NA()},0,1],...o.music?[["Đổi bài nhạc",()=>{ka(),NA()},0,1]]:[],[`Âm thanh: ${o.sound?"Bật":"Tắt"}`,()=>{o.sound=!o.sound,z(),NA()},0,1],...aA()<3?[[`Gợi ý bước nấu: ${o.hint?"Bật":"Tắt"}`,()=>{o.hint=!o.hint,z(),NA()},0,1]]:[],[`Tô viền món khách gọi: ${o.mark===!1?"Tắt":"Bật"}`,()=>{o.mark=o.mark===!1,z(),NA()},0,1],[`Hiệu ứng chuyển động: ${o.fx==="on"?"Luôn bật":o.fx==="off"?"Tắt":Oe()?"Theo máy (đang tắt)":"Theo máy"}`,()=>{o.fx=o.fx==="auto"?"on":o.fx==="on"?"off":"auto",z(),it(),NA()},0,1],...Zt()?[[`Toàn màn hình: ${In()?"Bật":"Tắt"}`,()=>{_e(!In()),setTimeout(()=>{d("modal").hidden||NA()},350)},0,1]]:[],...gs()?[[`Phóng to vừa máy tính bảng: ${o.bigTab===!1?"Tắt":"Bật"}`,()=>{o.bigTab=o.bigTab===!1,z(),Ai="",ni(),setTimeout(()=>{d("modal").hidden||NA()},300)},0,1]]:[],[`Giao diện: ${o.theme==="dark"?"Tối":o.theme==="light"?"Sáng":Ca()?"Theo máy (đang tối)":"Theo máy"}`,()=>{o.theme=o.theme==="dark"?"light":o.theme==="light"?"auto":"dark",z(),Bn(),NA()},0,1],["Điều khoản chơi",()=>xs(),0,1],["Cách chơi",()=>{d("modal").hidden=!0,ii(!1)},0,1],["Đưa game ra màn hình chính",()=>Va(),0,1],["Chơi lại từ đầu",()=>X("<h2>Chơi lại từ đầu?</h2><p>Mất toàn bộ tiền, món đã mở, trang bị và đánh giá.</p>",[["Huỷ",()=>{}],["Xoá và chơi lại",()=>{Lt(),i.plan={},z(),TA()},1]]),0,1],["Đóng",()=>{},1]]),ho()}function nh(A){const n=A.target.closest("button");if(n){if(n.dataset.tab){i.tab=n.dataset.tab,pA();return}if(n.id==="renBtn")return Ah();if(n.id==="checkinBtn")return showDailyCheckinModal();if(n.id==="storeCodeBtn")return showStoreCodeModal();if(n.id==="hagBtn")return js();if(n.id==="lauBtn")return ol();if(n.id==="lbBtn")return Ph();if(n.id==="chalBtn")return Fo();if(n.id==="prBtn")return Mi();const payTaxBtn=n.closest("[data-a=\"paytax\"]");
+return e+=`<h3>Hôm nay · ngày ${o.day}</h3><div class="ledger">${a||'<p class="note">Chưa chi khoản nào.</p>'}${A.gift?L("Quà","+"+y(A.gift)):""}${(A.oth||[]).length?'<p class="lh">Phát sinh</p>'+_t(A.oth,!0)+_t(A.oth,!1):""}<p class="lh">Trừ lúc đóng cửa</p>${L("Mặt bằng","−"+y(W.rent))}${L(`Điện nước${jn()?` · ${jn()} trang bị`:""}`,"−"+y(c))}${RA.filter(l=>o.staff[l.id]).map(l=>L("Lương "+l.n,"−"+y(l.wage))).join("")}</div>`,e+=Ns(),t.length?(e+="<h3>Các ngày trước</h3>"+t.map((l,s)=>{const h=l.rev-l.cost;return`<details class="dayc"${s?"":" open"}><summary><span>Ngày ${l.day}</span><small>${l.served} tô${l.avg?" · ★ "+l.avg.toFixed(1).replace(".",","):""}</small><b class="${h<0?"neg":"pos"}">${hn(h)}</b></summary>${co(l)}</details>`}).join(""),e):e+'<p class="note">Hết ngày đầu tiên sẽ có sổ chi tiết từng ngày.</p>'}function Ah(){X(`<h2>Đặt tên quán</h2><p>Tối đa 26 ký tự, hiện trên biển hiệu và màn hình chào.</p><input id="nameIn" maxlength="26" value="${V(o.shopName)}" placeholder="Ví dụ: Mì Cay Nhà Cáo" aria-label="Tên quán">`,[["Huỷ",()=>{}],["Lưu tên",()=>{o.shopName=d("nameIn").value.replace(/\s+/g," ").trim().slice(0,26),z(),M("Đã đổi tên quán"),TA()},1]]),setTimeout(()=>{const A=d("nameIn");A&&A.focus()},50)}const so=()=>`<div class="vols">${[["vol","Nhạc nền"],["sfxVol","Âm thanh"]].map(([A,n])=>{const t=Math.round(Ue(o[A])*100);return`<label class="vol"><span>${n}</span><input type="range" min="0" max="100" step="5" value="${t}" data-vol="${A}" aria-label="Âm lượng ${n.toLowerCase()}" style="--p:${t}%"><b>${t}%</b></label>`}).join("")}</div>`;function ho(){document.querySelectorAll("#card [data-vol]").forEach(A=>{const n=A.dataset.vol,t=A.parentNode.querySelector("b"),e=()=>{const a=Math.max(0,Math.min(100,Math.round(+A.value||0)));o[n]=a/100,A.style.setProperty("--p",a+"%"),t&&(t.textContent=a+"%"),n==="vol"&&Kc()};A.addEventListener("input",e),A.addEventListener("change",()=>{e(),z(),n==="sfxVol"&&C("tap")})})}function NA(){X(`<h2>Cài đặt</h2><p>Phiên bản 2.1 · tiến trình lưu trong trình duyệt này. Đổi máy hay trình duyệt thì chọn <b>Chuyển sang máy khác</b>. ${o.lastBackup?`Sao lưu gần nhất: ngày ${o.lastBackup}.`:"Chưa sao lưu lần nào."}</p>${so()}${ms()}<p class="note credit">Nhạc nền: ${jt.map(A=>A.n).join(", ")} của Kevin MacLeod (incompetech.com), giấy phép CC BY 4.0.</p>`,[["📅 Điểm danh hàng ngày",()=>showDailyCheckinModal(),0,1],["🔑 Lưu / Tạo mã cửa hàng",()=>showStoreCodeModal(),0,1],["📬 Hộp thư gửi tin nhắn cho Admin",()=>showAdminInboxModal(),0,1],["Chuyển sang máy khác",()=>Xa(),0,1],["Nhận tiệm từ máy khác",()=>Na(),0,1],["Sao lưu tiến trình",()=>ys(),0,1],["Khôi phục từ mã",()=>ws(),0,1],[`Nhạc nền: ${o.music?"Bật":"Tắt"}`,()=>{o.music=!o.music,z(),o.music?Ye():Ba(),NA()},0,1],...o.music?[["Đổi bài nhạc",()=>{ka(),NA()},0,1]]:[],[`Âm thanh: ${o.sound?"Bật":"Tắt"}`,()=>{o.sound=!o.sound,z(),NA()},0,1],...aA()<3?[[`Gợi ý bước nấu: ${o.hint?"Bật":"Tắt"}`,()=>{o.hint=!o.hint,z(),NA()},0,1]]:[],[`Tô viền món khách gọi: ${o.mark===!1?"Tắt":"Bật"}`,()=>{o.mark=o.mark===!1,z(),NA()},0,1],[`Hiệu ứng chuyển động: ${o.fx==="on"?"Luôn bật":o.fx==="off"?"Tắt":Oe()?"Theo máy (đang tắt)":"Theo máy"}`,()=>{o.fx=o.fx==="auto"?"on":o.fx==="on"?"off":"auto",z(),it(),NA()},0,1],...Zt()?[[`Toàn màn hình: ${In()?"Bật":"Tắt"}`,()=>{_e(!In()),setTimeout(()=>{d("modal").hidden||NA()},350)},0,1]]:[],...gs()?[[`Phóng to vừa máy tính bảng: ${o.bigTab===!1?"Tắt":"Bật"}`,()=>{o.bigTab=o.bigTab===!1,z(),Ai="",ni(),setTimeout(()=>{d("modal").hidden||NA()},300)},0,1]]:[],[`Giao diện: ${o.theme==="dark"?"Tối":o.theme==="light"?"Sáng":Ca()?"Theo máy (đang tối)":"Theo máy"}`,()=>{o.theme=o.theme==="dark"?"light":o.theme==="light"?"auto":"dark",z(),Bn(),NA()},0,1],["Điều khoản chơi",()=>xs(),0,1],["Cách chơi",()=>{d("modal").hidden=!0,ii(!1)},0,1],["Đưa game ra màn hình chính",()=>Va(),0,1],["Chơi lại từ đầu",()=>X("<h2>Chơi lại từ đầu?</h2><p>Mất toàn bộ tiền, món đã mở, trang bị và đánh giá.</p>",[["Huỷ",()=>{}],["Xoá và chơi lại",()=>{Lt(),i.plan={},z(),TA()},1]]),0,1],["Đóng",()=>{},1]]),ho()}function nh(A){const n=A.target.closest("button");if(n){if(n.dataset.tab){i.tab=n.dataset.tab,pA();return}if(n.id==="renBtn")return Ah();if(n.id==="checkinBtn")return showDailyCheckinModal();if(n.id==="storeCodeBtn")return showStoreCodeModal();if(n.id==="hagBtn")return js();if(n.id==="lauBtn")return ol();if(n.id==="lbBtn")return Ph();if(n.id==="chalBtn")return Fo();if(n.id==="prBtn")return Mi();const payTaxBtn=n.closest("[data-a=\"paytax\"]");
 if(payTaxBtn){
   const amt=getTaxAmount();
   if(o.money<amt){C("bad");M(`Không đủ tiền trong két! Cần ${y(amt)} để nộp thuế.`);return}
@@ -648,6 +653,88 @@ function getServerAnnouncementBannerHtml() {
   return "";
 }
 
+
+// --- HỘP THƯ TIN NHẮN GỬI CHO ADMIN ---
+function showAdminInboxModal() {
+  const curUser = localStorage.getItem("tiemMiCayUser") || o.shopName || "";
+  const curCode = o.storeCode || "";
+
+  X(`
+    <h2>📬 Hộp Thư Gửi Tin Nhắn Cho Admin</h2>
+    <p class="note" style="margin-bottom:12px;">Gửi góp ý, báo lỗi hoặc yêu cầu hỗ trợ trực tiếp tới Admin quản lý game.</p>
+    <div class="auth-form" style="margin-top:6px;">
+      <div>
+        <label for="inboxSender">Người gửi / Tên quán / Tài khoản</label>
+        <input id="inboxSender" value="${V(curUser)}" placeholder="Nhập tên của bạn hoặc tên quán" maxlength="40">
+      </div>
+      <div>
+        <label for="inboxCode">Mã tiệm (nếu có, để Admin dễ tra cứu hỗ trợ)</label>
+        <input id="inboxCode" value="${V(curCode)}" placeholder="VD: K7QX-2M9P" maxlength="15" style="text-transform:uppercase;font-family:monospace;letter-spacing:1px;">
+      </div>
+      <div>
+        <label for="inboxTopic">Chủ đề tin nhắn</label>
+        <select id="inboxTopic" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:13.5px;background:var(--paper);color:var(--ink);">
+          <option value="💡 Góp ý tính năng mới / Nội dung game">💡 Góp ý tính năng mới / Nội dung game</option>
+          <option value="🐞 Báo lỗi game / Sự cố hiển thị">🐞 Báo lỗi game / Sự cố hiển thị</option>
+          <option value="🔑 Hỗ trợ tài khoản / Mất dữ liệu tiệm">🔑 Hỗ trợ tài khoản / Mất dữ liệu tiệm</option>
+          <option value="💬 Phản hồi khác">💬 Phản hồi khác</option>
+        </select>
+      </div>
+      <div>
+        <label for="inboxContent">Nội dung tin nhắn <span style="color:#C62828;">*</span></label>
+        <textarea id="inboxContent" rows="4" placeholder="Nhập chi tiết ý kiến, phản hồi hoặc vấn đề bạn đang gặp phải..." style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:13.5px;box-sizing:border-box;resize:vertical;outline:none;background:var(--paper);color:var(--ink);" autofocus></textarea>
+      </div>
+      <div id="inboxErr" style="font-size:13px;font-weight:700;min-height:20px;margin-top:2px;"></div>
+    </div>
+  `,
+  [
+    ["✉️ Gửi Tin Nhắn Đi", async () => {
+      const sender = (d("inboxSender")?.value || "").trim() || "Chủ quán ẩn danh";
+      const code = (d("inboxCode")?.value || "").trim().toUpperCase();
+      const topic = d("inboxTopic")?.value || "Góp ý chung";
+      const content = (d("inboxContent")?.value || "").trim();
+      const errEl = d("inboxErr");
+      const card = d("card");
+      const btn = card?.querySelector(".btns .pri");
+
+      if (!content || content.length < 5) {
+        if (errEl) { errEl.style.color = "#C62828"; errEl.textContent = "❌ Vui lòng nhập nội dung tin nhắn tối thiểu 5 ký tự!"; }
+        C("nope"); return false;
+      }
+
+      if (btn) { btn.disabled = true; btn.textContent = "Đang gửi tin nhắn…"; }
+      if (errEl) { errEl.style.color = "#7E655B"; errEl.textContent = "Đang kết nối gửi đến Admin…"; }
+
+      try {
+        const resp = await fetch("/api/inbox", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sender, store_code: code, topic, content })
+        });
+        const res = await resp.json();
+        if (res.ok) {
+          if (errEl) { errEl.style.color = "#2E7D32"; errEl.textContent = "✓ Đã gửi tin nhắn đến Admin thành công!"; }
+          if (btn) { btn.textContent = "✓ Đã gửi"; }
+          C("star");
+          setTimeout(() => {
+            d("modal").hidden = true;
+            M("Cảm ơn bạn! Tin nhắn đã được gửi đến Admin.");
+          }, 600);
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = "✉️ Gửi Tin Nhắn Đi"; }
+          if (errEl) { errEl.style.color = "#C62828"; errEl.textContent = "❌ " + (res.error || "Lỗi gửi tin nhắn"); }
+          C("bad");
+        }
+      } catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = "✉️ Gửi Tin Nhắn Đi"; }
+        if (errEl) { errEl.style.color = "#C62828"; errEl.textContent = "❌ Lỗi kết nối mạng, vui lòng thử lại!"; }
+        C("bad");
+      }
+      return false;
+    }, 1, 1],
+    ["Đóng", () => {}]
+  ]);
+}
 
 function showDailyCheckinModal() {
   o.checkin = o.checkin || { lastDate: "", streak: 0, total: 0 };

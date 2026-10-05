@@ -133,6 +133,18 @@ def init_db():
                 updated_at BIGINT
             )
         """)
+        db.execute(f"""
+            CREATE TABLE IF NOT EXISTS admin_messages (
+                id {auto_id_type} PRIMARY KEY {auto_inc},
+                sender TEXT,
+                store_code TEXT,
+                topic TEXT,
+                content TEXT,
+                status TEXT DEFAULT 'pending',
+                created_at BIGINT,
+                updated_at BIGINT
+            )
+        """)
         db.execute("""
             CREATE TABLE IF NOT EXISTS game_config (
                 key TEXT PRIMARY KEY,
@@ -663,6 +675,52 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 "pranks": pranks
             })
         # 6. GET /api/admin/users
+                # GET /api/admin/inbox
+        if path == "/api/admin/inbox":
+            conn = DB()
+            cur = conn
+            status_filter = params.get("status", [""])[0].strip()
+            if status_filter in ("pending", "resolved"):
+                cur.execute("""
+                    SELECT id, sender, store_code, topic, content, status, created_at, updated_at
+                    FROM admin_messages
+                    WHERE status = ?
+                    ORDER BY created_at DESC
+                    LIMIT 100
+                """, (status_filter,))
+            else:
+                cur.execute("""
+                    SELECT id, sender, store_code, topic, content, status, created_at, updated_at
+                    FROM admin_messages
+                    ORDER BY (CASE WHEN status = 'pending' THEN 0 ELSE 1 END), created_at DESC
+                    LIMIT 100
+                """)
+            rows = cur.fetchall()
+            cur.execute("SELECT COUNT(*) FROM admin_messages WHERE status = 'pending'")
+            p_cnt = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM admin_messages")
+            tot = cur.fetchone()[0]
+            conn.close()
+
+            messages = []
+            for r in rows:
+                messages.append({
+                    "id": r[0],
+                    "sender": r[1] or "Ẩn danh",
+                    "store_code": r[2] or "",
+                    "topic": r[3] or "Góp ý",
+                    "content": r[4] or "",
+                    "status": r[5] or "pending",
+                    "created_at": r[6] or 0,
+                    "updated_at": r[7] or 0
+                })
+            return self.send_json({
+                "ok": True,
+                "messages": messages,
+                "pending_count": p_cnt,
+                "total": tot
+            })
+
         if path == "/api/admin/users":
             conn = DB()
             cur = conn
@@ -708,6 +766,53 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
         if "path" in params:
             path = "/api/" + params["path"][0]
         body = self.read_json_body()
+
+        # POST /api/inbox (Public Send Message to Admin)
+        if path == "/api/inbox":
+            sender = str(body.get("sender", "Khách ẩn danh")).strip()[:50]
+            store_code = str(body.get("store_code") or body.get("storeCode") or "").strip().upper()[:20]
+            topic = str(body.get("topic", "Góp ý chung")).strip()[:80]
+            content = str(body.get("content", "")).strip()[:2000]
+
+            if not content or len(content) < 3:
+                return self.send_json({"ok": False, "error": "Nội dung tin nhắn tối thiểu 3 ký tự!"}, status=400)
+
+            now_t = int(time.time())
+            conn = DB()
+            cur = conn
+            cur.execute("""
+                INSERT INTO admin_messages (sender, store_code, topic, content, status, created_at, updated_at)
+                VALUES (?, ?, ?, ?, 'pending', ?, ?)
+            """, (sender, store_code, topic, content, now_t, now_t))
+            conn.commit()
+            conn.close()
+            return self.send_json({"ok": True, "message": "Đã gửi tin nhắn đến Admin thành công!"})
+
+        # POST /api/admin/inbox/status (Update Message Status)
+        if path == "/api/admin/inbox/status":
+            msg_id = int(body.get("id", 0))
+            new_status = str(body.get("status", "resolved")).strip()
+            if msg_id:
+                now_t = int(time.time())
+                conn = DB()
+                cur = conn
+                cur.execute("UPDATE admin_messages SET status = ?, updated_at = ? WHERE id = ?", (new_status, now_t, msg_id))
+                conn.commit()
+                conn.close()
+                return self.send_json({"ok": True, "id": msg_id, "status": new_status})
+            return self.send_json({"ok": False, "error": "Thiếu ID tin nhắn"}, status=400)
+
+        # POST /api/admin/inbox/delete (Delete Message)
+        if path == "/api/admin/inbox/delete":
+            msg_id = int(body.get("id", 0))
+            if msg_id:
+                conn = DB()
+                cur = conn
+                cur.execute("DELETE FROM admin_messages WHERE id = ?", (msg_id,))
+                conn.commit()
+                conn.close()
+                return self.send_json({"ok": True, "id": msg_id})
+            return self.send_json({"ok": False, "error": "Thiếu ID tin nhắn"}, status=400)
 
         if path == "/api/admin/config":
             payload = body.get("config", body)

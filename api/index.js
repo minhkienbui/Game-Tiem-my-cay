@@ -98,6 +98,16 @@ module.exports = async (req, res) => {
   // Auto-migration: ensure game_config table exists
   try {
     await sql`
+      CREATE TABLE IF NOT EXISTS admin_messages (
+        id SERIAL PRIMARY KEY,
+        sender TEXT,
+        store_code TEXT,
+        topic TEXT,
+        content TEXT,
+        status TEXT DEFAULT 'pending',
+        created_at BIGINT,
+        updated_at BIGINT
+      );
       CREATE TABLE IF NOT EXISTS game_config (
         key TEXT PRIMARY KEY,
         value TEXT,
@@ -438,6 +448,45 @@ module.exports = async (req, res) => {
         return res.status(404).json({ ok: false });
       }
 
+      // GET /api/admin/inbox (List Inbox Messages)
+      if (path === "/api/admin/inbox") {
+        const status = urlObj.searchParams.get("status");
+        let rows;
+        if (status === "pending" || status === "resolved") {
+          rows = await sql`
+            SELECT id, sender, store_code, topic, content, status, created_at, updated_at
+            FROM admin_messages
+            WHERE status = ${status}
+            ORDER BY created_at DESC
+            LIMIT 100
+          `;
+        } else {
+          rows = await sql`
+            SELECT id, sender, store_code, topic, content, status, created_at, updated_at
+            FROM admin_messages
+            ORDER BY (CASE WHEN status = 'pending' THEN 0 ELSE 1 END), created_at DESC
+            LIMIT 100
+          `;
+        }
+        const pendingRes = await sql`SELECT count(*) FROM admin_messages WHERE status = 'pending'`;
+        const totalRes = await sql`SELECT count(*) FROM admin_messages`;
+        return res.json({
+          ok: true,
+          messages: rows.map(r => ({
+            id: r.id,
+            sender: r.sender || "Ẩn danh",
+            store_code: r.store_code || "",
+            topic: r.topic || "Góp ý",
+            content: r.content || "",
+            status: r.status || "pending",
+            created_at: Number(r.created_at || 0),
+            updated_at: Number(r.updated_at || 0)
+          })),
+          pending_count: Number(pendingRes[0]?.count || 0),
+          total: Number(totalRes[0]?.count || rows.length)
+        });
+      }
+
       // 6. GET /api/admin/users
       if (path === "/api/admin/users") {
         const rows = await sql`
@@ -584,6 +633,53 @@ module.exports = async (req, res) => {
           config: cfg,
           updated_at: nowT
         });
+      }
+
+      // POST /api/inbox (Public: Send message / feedback to Admin)
+      if (path === "/api/inbox") {
+        const sender = String(body.sender || "Khách ẩn danh").slice(0, 50).trim();
+        const store_code = String(body.store_code || body.storeCode || "").slice(0, 20).trim().toUpperCase();
+        const topic = String(body.topic || "Góp ý chung").slice(0, 80).trim();
+        const content = String(body.content || "").slice(0, 2000).trim();
+
+        if (!content || content.length < 3) {
+          return res.status(400).json({ ok: false, error: "Nội dung tin nhắn tối thiểu 3 ký tự!" });
+        }
+
+        const nowT = Math.floor(Date.now() / 1000);
+        await sql`
+          INSERT INTO admin_messages (sender, store_code, topic, content, status, created_at, updated_at)
+          VALUES (${sender}, ${store_code}, ${topic}, ${content}, 'pending', ${nowT}, ${nowT})
+        `;
+
+        return res.json({ ok: true, message: "Đã gửi tin nhắn đến Admin thành công!" });
+      }
+
+      // POST /api/admin/inbox/status (Update Message Status: 'pending' or 'resolved')
+      if (path === "/api/admin/inbox/status") {
+        const id = parseInt(body.id, 10);
+        const status = String(body.status || "resolved").trim();
+        const nowT = Math.floor(Date.now() / 1000);
+
+        if (id) {
+          await sql`
+            UPDATE admin_messages
+            SET status = ${status}, updated_at = ${nowT}
+            WHERE id = ${id}
+          `;
+          return res.json({ ok: true, id, status });
+        }
+        return res.status(400).json({ ok: false, error: "Missing message id" });
+      }
+
+      // POST /api/admin/inbox/delete (Delete Message)
+      if (path === "/api/admin/inbox/delete") {
+        const id = parseInt(body.id, 10);
+        if (id) {
+          await sql`DELETE FROM admin_messages WHERE id = ${id}`;
+          return res.json({ ok: true, id });
+        }
+        return res.status(400).json({ ok: false, error: "Missing message id" });
       }
 
       // 1. POST /api/auth/register
