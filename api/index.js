@@ -107,7 +107,9 @@ module.exports = async (req, res) => {
         status TEXT DEFAULT 'pending',
         created_at BIGINT,
         updated_at BIGINT
-      );
+      )
+    `;
+    await sql`
       CREATE TABLE IF NOT EXISTS game_config (
         key TEXT PRIMARY KEY,
         value TEXT,
