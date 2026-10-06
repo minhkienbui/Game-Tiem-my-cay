@@ -678,7 +678,7 @@
                 <th>Tiền Két</th>
                 <th>Lần Đăng Nhập Cuối</th>
                 <th>Lượt Vào</th>
-                <th>Thiết Bị</th>
+                <th>Đồng Bộ Thiết Bị</th>
                 <th>Bản Lưu</th>
                 <th>Thao Tác</th>
               </tr>
@@ -1714,7 +1714,11 @@
           <td style="font-weight:700; color:#3E9B4F;">${formatMoney(u.money)}</td>
           <td><small>${u.last_login_at ? new Date(u.last_login_at * 1000).toLocaleString("vi-VN") : "Chưa có"}</small></td>
           <td><b>${u.login_count || 1}</b> lần</td>
-          <td><small style="color:var(--text-muted);">${escapeHtml(u.device_info || "Desktop")}</small></td>
+          <td>
+            <span style="display:inline-flex;align-items:center;gap:4px;color:#166534;background:#DCFCE7;padding:3px 8px;border-radius:12px;font-size:11.5px;font-weight:700;">
+              🟢 PC & Điện Thoại (Đồng bộ)
+            </span>
+          </td>
           <td>${u.has_save ? '<span style="color:#2E7D32; font-weight:700;">✓ Có bản lưu</span>' : '<span style="color:#888;">Chưa lưu</span>'}</td>
           <td>
             <div style="display:flex;gap:4px;flex-wrap:wrap;">

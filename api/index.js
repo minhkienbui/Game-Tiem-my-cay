@@ -530,12 +530,32 @@ module.exports = async (req, res) => {
         });
       }
 
-      // 3. GET /api/sync (Permanent Store Code / Save Sync)
+      // 3. GET /api/sync (Permanent Store Code / Save Sync & Account Linkage)
       if (path === "/api/sync") {
         const code = (urlObj.searchParams.get("code") || "").trim().toUpperCase();
+        if (!code) {
+          return res.status(400).json({ error: "Thiếu mã chuyển tiệm" });
+        }
+
+        // Check if code belongs to an existing user account
+        const uRows = await sql`
+          SELECT u.username, u.current_money, s.save_data
+          FROM users u
+          LEFT JOIN user_saves s ON LOWER(u.username) = LOWER(s.username)
+          WHERE UPPER(u.store_code) = ${code}
+        `;
+        if (uRows.length && uRows[0].save_data) {
+          let sData = uRows[0].save_data;
+          const curMoney = Number(uRows[0].current_money != null ? uRows[0].current_money : 400000);
+          if (sData.startsWith("MC2|")) {
+            sData = updateSaveDataMoney(sData, curMoney);
+          }
+          return res.json({ s: sData, username: uRows[0].username, money: curMoney, code });
+        }
+
         const rows = await sql`SELECT save_data, created_at FROM cloud_saves WHERE UPPER(code) = ${code}`;
         if (rows.length) {
-          return res.json({ s: rows[0].save_data });
+          return res.json({ s: rows[0].save_data, code });
         }
         return res.status(404).json({ error: "Mã không đúng hoặc không tìm thấy tiệm" });
       }
@@ -551,18 +571,6 @@ module.exports = async (req, res) => {
           LIMIT 15
         `;
         return res.json({ left: 3, sent: [], near });
-      }
-
-      // 5. GET /api/auth/save
-      if (path === "/api/auth/save") {
-        const username = (urlObj.searchParams.get("username") || "").trim().toLowerCase();
-        if (username) {
-          const rows = await sql`SELECT save_data FROM user_saves WHERE LOWER(username) = ${username}`;
-          if (rows.length) {
-            return res.json({ ok: true, save: rows[0].save_data });
-          }
-        }
-        return res.status(404).json({ ok: false });
       }
 
       // GET /api/chat/messages (User 1-on-1 Chat History)
@@ -1350,7 +1358,7 @@ module.exports = async (req, res) => {
         }
 
         const pwdHash = hashPassword(password);
-        const userRows = await sql`SELECT password_hash FROM users WHERE LOWER(username) = ${username}`;
+        const userRows = await sql`SELECT id, username, password_hash, current_money, current_day, current_lv, store_code FROM users WHERE LOWER(username) = ${username}`;
 
         if (!userRows.length || userRows[0].password_hash !== pwdHash) {
           return res.status(400).json({ ok: false, error: "Sai tài khoản hoặc mật khẩu!" });
@@ -1368,11 +1376,21 @@ module.exports = async (req, res) => {
         `;
 
         const saveRows = await sql`SELECT save_data FROM user_saves WHERE LOWER(username) = ${username}`;
+        const uInfo = userRows[0] || {};
+        let saveData = saveRows[0]?.save_data || null;
+        const curMoney = Number(uInfo.current_money != null ? uInfo.current_money : 400000);
+        if (saveData && saveData.startsWith("MC2|")) {
+          saveData = updateSaveDataMoney(saveData, curMoney);
+        }
 
         return res.json({
           ok: true,
           username,
-          save: saveRows[0]?.save_data || null,
+          save: saveData,
+          money: curMoney,
+          day: Number(uInfo.current_day || 1),
+          lv: Number(uInfo.current_lv || 1),
+          store_code: uInfo.store_code || "",
           message: "Đăng nhập thành công!"
         });
       }
@@ -1384,6 +1402,8 @@ module.exports = async (req, res) => {
         const dayVal = Math.max(1, parseInt(body.day, 10) || 1);
         const moneyVal = parseInt(body.money, 10) || 400000;
         const lvVal = Math.max(1, Math.min(50, parseInt(body.lv, 10) || 1));
+        const storeCode = String(body.store_code || body.storeCode || "").trim().toUpperCase();
+        let savePid = String(body.pid || "").trim();
         const nowT = Math.floor(Date.now() / 1000);
 
         if (username && saveData) {
@@ -1395,11 +1415,41 @@ module.exports = async (req, res) => {
               updated_at = EXCLUDED.updated_at
           `;
 
-          await sql`
-            UPDATE users
-            SET current_day = ${dayVal}, current_money = ${moneyVal}, current_lv = ${lvVal}, last_login_at = ${nowT}
-            WHERE LOWER(username) = ${username}
-          `;
+          if (storeCode) {
+            await sql`
+              UPDATE users
+              SET current_day = ${dayVal}, current_money = ${moneyVal}, current_lv = ${lvVal}, last_login_at = ${nowT}, store_code = ${storeCode}
+              WHERE LOWER(username) = ${username}
+            `;
+            await sql`
+              INSERT INTO cloud_saves (code, save_data, created_at)
+              VALUES (${storeCode}, ${saveData}, ${nowT})
+              ON CONFLICT(code) DO UPDATE SET
+                save_data = EXCLUDED.save_data,
+                created_at = EXCLUDED.created_at
+            `;
+          } else {
+            await sql`
+              UPDATE users
+              SET current_day = ${dayVal}, current_money = ${moneyVal}, current_lv = ${lvVal}, last_login_at = ${nowT}
+              WHERE LOWER(username) = ${username}
+            `;
+          }
+
+          if (!savePid && saveData && saveData.startsWith("MC2|")) {
+            try {
+              const dec = Buffer.from(saveData.split("|")[1], "base64").toString("utf8");
+              savePid = JSON.parse(dec).pid || "";
+            } catch (e) {}
+          }
+          if (savePid) {
+            await sql`
+              UPDATE leaderboard
+              SET profit = ${moneyVal}, day = ${dayVal}, lv = ${lvVal}, updated_at = ${nowT}
+              WHERE id = ${savePid}
+            `;
+            lbCache.time = 0;
+          }
 
           return res.json({ ok: true });
         }
