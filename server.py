@@ -1302,6 +1302,88 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
                 cur.execute("UPDATE leaderboard SET profit = ?, updated_at = ? WHERE id = ?", (new_money, now_t, target_id))
 
+                # Synchronize user account & save file
+                matched_user = None
+                user_save = None
+                store_code = ""
+
+                cur.execute("SELECT s.username, s.save_data, u.store_code FROM user_saves s LEFT JOIN users u ON LOWER(s.username) = LOWER(u.username)")
+                all_saves = cur.fetchall()
+                for s in all_saves:
+                    if s[1] and s[1].startswith("MC2|"):
+                        try:
+                            parts = s[1].split("|")
+                            dec = base64.b64decode(parts[1]).decode("utf-8")
+                            obj = json.loads(dec)
+                            if obj.get("pid") == target_id or (display_name and obj.get("shopName") == display_name) or s[0].lower() == target_id.lower():
+                                matched_user = s[0]
+                                user_save = s[1]
+                                store_code = s[2] or obj.get("storeCode") or ""
+                                break
+                        except Exception:
+                            pass
+
+                if matched_user:
+                    cur.execute("UPDATE users SET current_money = ? WHERE LOWER(username) = ?", (new_money, matched_user.lower()))
+                    if user_save:
+                        upd_save = update_save_data_money(user_save, new_money)
+                        cur.execute("UPDATE user_saves SET save_data = ?, updated_at = ? WHERE LOWER(username) = ?", (upd_save, now_t, matched_user.lower()))
+                        if store_code:
+                            cur.execute("UPDATE cloud_saves SET save_data = ?, created_at = ? WHERE UPPER(code) = ?", (upd_save, now_t, store_code.upper()))
+
+                    if notify_player:
+                        diff = new_money - old_money
+                        if diff != 0:
+                            is_add = diff > 0
+                            title = "🎁 Cộng Tiền Vào Két Từ Admin" if is_add else "🏛️ Khấu Trừ Tiền Két Từ Admin"
+                            default_msg = f"Admin đã cộng +{diff:,}đ vào két quán! Tiền két hiện tại: {new_money:,}đ." if is_add else f"Admin đã trừ -{abs(diff):,}đ khỏi két quán! Tiền két hiện tại: {new_money:,}đ."
+                            msg = (default_msg + " Lý do: " + reason) if reason else default_msg
+                            cur.execute("""
+                                INSERT INTO admin_gifts (target_type, target_id, target_name, store_code, amount, title, message, claimed, created_at)
+                                VALUES ('user', ?, ?, ?, ?, ?, ?, 0, ?)
+                            """, (matched_user, display_name, store_code, diff, title, msg, now_t))
+
+                # Synchronize user account & save file
+                matched_user = None
+                user_save = None
+                store_code = ""
+
+                cur.execute("SELECT s.username, s.save_data, u.store_code FROM user_saves s LEFT JOIN users u ON LOWER(s.username) = LOWER(u.username)")
+                all_saves = cur.fetchall()
+                for s in all_saves:
+                    if s[1] and s[1].startswith("MC2|"):
+                        try:
+                            parts = s[1].split("|")
+                            dec = base64.b64decode(parts[1]).decode("utf-8")
+                            obj = json.loads(dec)
+                            if obj.get("pid") == target_id or (display_name and obj.get("shopName") == display_name) or s[0].lower() == target_id.lower():
+                                matched_user = s[0]
+                                user_save = s[1]
+                                store_code = s[2] or obj.get("storeCode") or ""
+                                break
+                        except Exception:
+                            pass
+
+                if matched_user:
+                    cur.execute("UPDATE users SET current_money = ? WHERE LOWER(username) = ?", (new_money, matched_user.lower()))
+                    if user_save:
+                        upd_save = update_save_data_money(user_save, new_money)
+                        cur.execute("UPDATE user_saves SET save_data = ?, updated_at = ? WHERE LOWER(username) = ?", (upd_save, now_t, matched_user.lower()))
+                        if store_code:
+                            cur.execute("UPDATE cloud_saves SET save_data = ?, created_at = ? WHERE UPPER(code) = ?", (upd_save, now_t, store_code.upper()))
+
+                    if notify_player:
+                        diff = new_money - old_money
+                        if diff != 0:
+                            is_add = diff > 0
+                            title = "🎁 Cộng Tiền Vào Két Từ Admin" if is_add else "🏛️ Khấu Trừ Tiền Két Từ Admin"
+                            default_msg = f"Admin đã cộng +{diff:,}đ vào két quán! Tiền két hiện tại: {new_money:,}đ." if is_add else f"Admin đã trừ -{abs(diff):,}đ khỏi két quán! Tiền két hiện tại: {new_money:,}đ."
+                            msg = (default_msg + " Lý do: " + reason) if reason else default_msg
+                            cur.execute("""
+                                INSERT INTO admin_gifts (target_type, target_id, target_name, store_code, amount, title, message, claimed, created_at)
+                                VALUES ('user', ?, ?, ?, ?, ?, ?, 0, ?)
+                            """, (matched_user, display_name, store_code, diff, title, msg, now_t))
+
             conn.commit()
             conn.close()
             return self.send_json({

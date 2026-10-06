@@ -542,7 +542,7 @@
                   <th>Hạng</th>
                   <th>Tên Quán</th>
                   <th>Cấp</th>
-                  <th>Doanh Thu</th>
+                  <th>Tiền Trong Két</th>
                 </tr>
               </thead>
               <tbody id="overviewTopShopsBody">
@@ -711,7 +711,7 @@
                 <th>Ngày Chơi</th>
                 <th>Tô Đã Bán</th>
                 <th>Đánh Giá</th>
-                <th>Lãi Tích Lũy</th>
+                <th>Tiền Trong Két</th>
                 <th>Thao Tác</th>
               </tr>
             </thead>
@@ -1720,7 +1720,7 @@
             <div style="display:flex;gap:4px;flex-wrap:wrap;">
               ${u.has_save ? `<button class="btn-act btn-edit" onclick="viewUserSave('${escapeHtml(u.username)}')">👁️ Save</button>` : ''}
               ${u.store_code ? `<button class="btn-act" style="background:#E8F5E9;color:#2E7D32;" onclick="adminReceiveStoreToTest('${escapeHtml(u.store_code)}')">🎮 Test</button>` : ''}
-              <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openMoneyModal('user', '${escapeHtml(u.username)}', '${escapeHtml(u.username)}', ${u.money || 400000}, '${escapeHtml(u.store_code || '')}')" style="background:#E8F5E9;color:#2E7D32;border:1.5px solid #A5D6A7;font-weight:800;font-size:12px;">💵 Thêm/Trừ Tiền</button>
+              
               <button class="btn-act" onclick="resetUserPassword('${escapeHtml(u.username)}')">🔑 Pass</button>
               <button class="btn-act btn-del" onclick="deleteUser('${escapeHtml(u.username)}')">🗑️</button>
             </div>

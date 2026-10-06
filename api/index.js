@@ -1147,11 +1147,82 @@ module.exports = async (req, res) => {
             newMoney = Math.max(0, amount);
           }
 
+          // 1. Update leaderboard table
           await sql`
             UPDATE leaderboard
             SET profit = ${newMoney}, updated_at = ${nowT}
             WHERE id = ${targetId}
           `;
+
+          // 2. Find and synchronize the corresponding user account & save file
+          let matchedUsername = null;
+          let userSaveData = null;
+          let userStoreCode = "";
+
+          try {
+            const allSaves = await sql`SELECT s.username, s.save_data, u.store_code FROM user_saves s LEFT JOIN users u ON LOWER(s.username) = LOWER(u.username)`;
+            for (const s of allSaves) {
+              if (s.save_data && s.save_data.startsWith("MC2|")) {
+                try {
+                  const parts = s.save_data.split("|");
+                  const dec = Buffer.from(parts[1], "base64").toString("utf8");
+                  const obj = JSON.parse(dec);
+                  if (obj.pid === targetId || (displayName && obj.shopName === displayName) || s.username.toLowerCase() === targetId.toLowerCase()) {
+                    matchedUsername = s.username;
+                    userSaveData = s.save_data;
+                    userStoreCode = s.store_code || obj.storeCode || "";
+                    break;
+                  }
+                } catch (e) {}
+              }
+            }
+          } catch (e) {}
+
+          // Update user record if found
+          if (matchedUsername) {
+            await sql`
+              UPDATE users
+              SET current_money = ${newMoney}
+              WHERE LOWER(username) = ${matchedUsername.toLowerCase()}
+            `;
+
+            if (userSaveData) {
+              const updatedSave = updateSaveDataMoney(userSaveData, newMoney);
+              await sql`
+                UPDATE user_saves
+                SET save_data = ${updatedSave}, updated_at = ${nowT}
+                WHERE LOWER(username) = ${matchedUsername.toLowerCase()}
+              `;
+              if (userStoreCode) {
+                await sql`
+                  UPDATE cloud_saves
+                  SET save_data = ${updatedSave}, created_at = ${nowT}
+                  WHERE UPPER(code) = ${userStoreCode.toUpperCase()}
+                `;
+              }
+            }
+
+            // Send notification gift if requested
+            if (notifyPlayer) {
+              const diff = newMoney - oldMoney;
+              if (diff !== 0) {
+                const isAdd = diff > 0;
+                const title = isAdd ? "🎁 Cộng Tiền Vào Két Từ Admin" : "🏛️ Khấu Trừ Tiền Két Từ Admin";
+                const defaultMsg = isAdd
+                  ? `Admin đã cộng +${diff.toLocaleString('vi-VN')}đ vào két quán! Tiền két hiện tại: ${newMoney.toLocaleString('vi-VN')}đ.`
+                  : `Admin đã trừ -${Math.abs(diff).toLocaleString('vi-VN')}đ khỏi két quán! Tiền két hiện tại: ${newMoney.toLocaleString('vi-VN')}đ.`;
+                const msg = reason ? (defaultMsg + " Lý do: " + reason) : defaultMsg;
+
+                await sql`
+                  INSERT INTO admin_gifts (target_type, target_id, target_name, store_code, amount, title, message, claimed, created_at)
+                  VALUES ('user', ${matchedUsername}, ${displayName}, ${userStoreCode || ''}, ${diff}, ${title}, ${msg}, 0, ${nowT})
+                `;
+              }
+            }
+          }
+
+          lbCache.time = 0;
+          chalGlobalCache.time = 0;
         }
 
         return res.json({
