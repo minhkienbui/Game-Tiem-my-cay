@@ -307,6 +307,72 @@ module.exports = async (req, res) => {
         return res.json({ ok: true, config: cfg, updated_at: lastUpdated });
       }
 
+      // GET /api/auth/save (Get User Latest Cloud Save & Cross-device Sync)
+      if (path === "/api/auth/save") {
+        const username = (urlObj.searchParams.get("username") || "").trim().toLowerCase();
+        const code = (urlObj.searchParams.get("code") || "").trim().toUpperCase();
+
+        if (username) {
+          const uRows = await sql`
+            SELECT u.id, u.username, u.current_money, u.current_day, u.current_lv, u.store_code, s.save_data, s.updated_at
+            FROM users u
+            LEFT JOIN user_saves s ON LOWER(u.username) = LOWER(s.username)
+            WHERE LOWER(u.username) = ${username}
+          `;
+          if (uRows.length && uRows[0].save_data) {
+            let saveData = uRows[0].save_data;
+            const curMoney = Number(uRows[0].current_money != null ? uRows[0].current_money : 400000);
+            if (saveData && saveData.startsWith("MC2|")) {
+              saveData = updateSaveDataMoney(saveData, curMoney);
+            }
+            return res.json({
+              ok: true,
+              username: uRows[0].username,
+              save: saveData,
+              money: curMoney,
+              day: Number(uRows[0].current_day || 1),
+              lv: Number(uRows[0].current_lv || 1),
+              store_code: uRows[0].store_code || "",
+              updated_at: Number(uRows[0].updated_at || 0)
+            });
+          }
+        } else if (code) {
+          const cRows = await sql`
+            SELECT u.id, u.username, u.current_money, u.current_day, u.current_lv, u.store_code, s.save_data, s.updated_at
+            FROM users u
+            LEFT JOIN user_saves s ON LOWER(u.username) = LOWER(s.username)
+            WHERE UPPER(u.store_code) = ${code}
+          `;
+          if (cRows.length && cRows[0].save_data) {
+            let saveData = cRows[0].save_data;
+            const curMoney = Number(cRows[0].current_money != null ? cRows[0].current_money : 400000);
+            if (saveData && saveData.startsWith("MC2|")) {
+              saveData = updateSaveDataMoney(saveData, curMoney);
+            }
+            return res.json({
+              ok: true,
+              username: cRows[0].username,
+              save: saveData,
+              money: curMoney,
+              day: Number(cRows[0].current_day || 1),
+              lv: Number(cRows[0].current_lv || 1),
+              store_code: cRows[0].store_code || "",
+              updated_at: Number(cRows[0].updated_at || 0)
+            });
+          }
+          const csRows = await sql`SELECT save_data, created_at FROM cloud_saves WHERE UPPER(code) = ${code}`;
+          if (csRows.length) {
+            return res.json({
+              ok: true,
+              save: csRows[0].save_data,
+              store_code: code,
+              updated_at: Number(csRows[0].created_at || 0)
+            });
+          }
+        }
+        return res.status(404).json({ ok: false, error: "Chưa có bản lưu trên cloud" });
+      }
+
       // GET /api/user/gifts (Check for Unclaimed Admin Gifts - Strict Filtering)
       if (path === "/api/user/gifts") {
         const shopId = (urlObj.searchParams.get("id") || "").trim();
