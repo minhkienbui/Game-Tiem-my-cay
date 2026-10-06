@@ -367,7 +367,7 @@ async function Ph() {
   const c = t.me || { left: oe, best: 0, rank: 0 };
   const l = `<div class="chmenu" aria-label="Thực đơn của đề">${[...a.broths, ...a.tops].map(g => `<span>${Wt(g)}<small>${B[g].type === "broth" ? B[g].s : Tn[g] || B[g].n}</small></span>`).join("")}</div>`;
   const s = Array.isArray(t.top) ? t.top.slice(0, 3) : [];
-  const h = (c.best ? `<p class="chme">Điểm cao nhất của quán hôm nay: <b>${dA(c.best)}</b> · hạng ${dA(c.rank)}/${dA(t.total || 1)}</p>` : "") + `<p class="chme">Hôm nay còn <b>${c.left}</b>/${oe} lượt thi.</p>`;
+  const h = (c.best ? `<p class="chme">Tổng điểm tích lũy hôm nay: <b>${dA(c.best)}</b> (Tuần: <b>${dA(c.wbest || c.best)}</b> điểm) · Hạng <b>${dA(c.rank)}/${dA(t.total || 1)}</b></p>` : "") + `<p class="chme">Hôm nay còn <b>${c.left}</b>/3 lượt thi (Điểm cộng dồn cả 3 lượt đến hết tuần).</p>`;
 
   X(`<h2>Giải mì ${ce(e)}</h2><p>90 giây, 20 khách giống hệt mọi quán khác hôm nay. Nấu đúng món, vớt mì đúng lúc, giao nhanh để lấy điểm.</p>
     <ul class="news"><li>Mỗi tô đúng 100 điểm, mì vừa chín thêm 30, khách chờ ít thêm tới 40.</li><li>Sai món trừ 30, khách bỏ về trừ 50.</li><li>Thi trên bếp riêng: không tốn hàng, không thu tiền, quán giữ nguyên như trước.</li></ul>
@@ -401,7 +401,7 @@ async function Fo(){
   <div class="money chpts"><small>Điểm</small><span class="mv" id="chPts">${dA(Math.max(0,n.score))}</span></div>
   <div class="r" id="chSub">${Eo(n)}</div>`}function Xh(){const A=document.querySelector("#top .sub");A&&(A.textContent=Uo()),Je()}function wi(){const A=i.chal;if(!A)return;const n=d("chPts");n&&(n.textContent=dA(Math.max(0,A.score)),cA(n.parentNode,"gain"));const t=d("chSub");t&&(t.textContent=Eo(A))}function jo(A){const n=i.chal;if(!n)return;clearInterval(Un),i.run=!1,i.paused=!1;const t={score:Math.max(0,n.score),served:n.served,perfect:n.perfect,wrong:n.wrong,lost:n.lost};if(o=JSON.parse(n.snap),i.chal=null,w=null,i.slots=[],i.online=[],i.pots=[],i.basket=0,i.pq=[],C("day"),TA(),A){M("Đã dừng lượt thi, lượt này không tính điểm");return}Nh(n,t)}async function Nh(A,n){if(X(`<div class="chres"><span class="dtag">Giải mì ${ce(A.day)} · ${A.practice?"thi thử":`lượt ${A.n}/${oe}`}</span><h2>${dA(n.score)} điểm</h2>
     <div class="cst"><span><b>${n.served}</b>tô đúng</span><span><b>${n.perfect}</b>mì chuẩn</span><span><b>${n.wrong}</b>sai món</span><span><b>${n.lost}</b>bỏ về</span></div>
-    <p class="note" id="chRank">${A.practice?"Thi thử không tính hạng.":"Đang gửi điểm…"}</p></div>`,[["Chép kết quả để khoe",()=>Sh(A,n),1,1],["Bảng giải",()=>se()],["Đóng",()=>{}]]),n.served&&sn(n.score>=1500?40:16),A.practice)return;const t={op:"end",id:VA(),name:XA(),day:A.day,n:A.n,token:A.token,...n};t.sig=Fn([t.id,t.day,t.n,t.score,t.served,t.perfect,t.wrong,t.lost,t.token].join("|"));let e=null;for(let c=0;c<3&&(e=await _A("api/chal",t),!(e.ok||e.status&&e.status<500));c++)await new Promise(l=>setTimeout(l,2500));clientChalCache=null;const a=d("chRank");e.ok&&e.j&&e.j.rank?(A.rank=e.j.rank,A.total=e.j.total,a&&(a.innerHTML=`Hạng <b>${dA(e.j.rank)}</b> / ${dA(e.j.total)} quán hôm nay · điểm cao nhất: <b>${dA(e.j.best||t.score)}</b>${e.j.left!=null?` · còn <b>${e.j.left}</b> lượt thi`:""}`)):a&&(a.textContent=e.j&&e.j.error||"Chưa gửi được điểm, kiểm tra mạng nha.")}function Sh(A,n){const t=/^https?:/.test(location.origin)?location.origin:"https://aenhatrang.com",e=`🍜 Giải mì ${ce(A.day)} · ${XA()}
+    <p class="note" id="chRank">${A.practice?"Thi thử không tính hạng.":"Đang gửi điểm…"}</p></div>`,[["Chép kết quả để khoe",()=>Sh(A,n),1,1],["Bảng giải",()=>se()],["Đóng",()=>{}]]),n.served&&sn(n.score>=1500?40:16),A.practice)return;const t={op:"end",id:VA(),name:XA(),day:A.day,n:A.n,token:A.token,...n};t.sig=Fn([t.id,t.day,t.n,t.score,t.served,t.perfect,t.wrong,t.lost,t.token].join("|"));let e=null;for(let c=0;c<3&&(e=await _A("api/chal",t),!(e.ok||e.status&&e.status<500));c++)await new Promise(l=>setTimeout(l,2500));clientChalCache=null;const a=d("chRank");e.ok&&e.j&&e.j.rank?(A.rank=e.j.rank,A.total=e.j.total,a&&(a.innerHTML=`Hạng <b>${dA(e.j.rank)}</b> / ${dA(e.j.total)} hôm nay · Tổng điểm hôm nay: <b>${dA(e.j.best||t.score)}</b> (Tuần: <b>${dA(e.j.wbest||e.j.best||t.score)}</b> điểm)${e.j.left!=null?` · còn <b>${e.j.left}</b>/3 lượt thi`:""}`)):a&&(a.textContent=e.j&&e.j.error||"Chưa gửi được điểm, kiểm tra mạng nha.")}function Sh(A,n){const t=/^https?:/.test(location.origin)?location.origin:"https://aenhatrang.com",e=`🍜 Giải mì ${ce(A.day)} · ${XA()}
 ${n.served} tô · ${dA(n.score)} điểm${A.rank?` · hạng ${dA(A.rank)}/${dA(A.total)}`:""} 🌶️
 ${t}`,a=()=>{let c=d("chShare");const l=d("card").querySelector(".chres");!c&&l&&(l.insertAdjacentHTML("beforeend",'<textarea id="chShare" class="share" rows="3" readonly aria-label="Kết quả để chép"></textarea>'),c=d("chShare")),c&&(c.value=e,c.focus(),c.select()),M("Bôi đen sẵn rồi, bấm giữ rồi chọn Sao chép nha")};try{navigator.clipboard.writeText(e).then(()=>M("Đã chép, dán vào tin nhắn để khoe nha"),a)}catch{a()}}const Xo=A=>A?`<i class="ccup c${A}" title="Cúp Giải mì tuần trước">${ai}</i>`:"",No=(A,n)=>A&&o.tutDone?`<button class="pkb" type="button" data-pi="${n}" aria-label="Chọc quán này">${So}</button>`:"<span></span>";async function se(A){
   A = (A === "w" || A === "hof") ? A : "d";
@@ -491,7 +491,7 @@ ${t}`,a=()=>{let c=d("chShare");const l=d("card").querySelector(".chres");!c&&l&
   // TAB 1 & TAB 2: HÔM NAY & TUẦN NÀY
   const s = ((A === "d" ? e.top : e.wtop) || []).filter(g => g && typeof g.name === "string" && Number.isFinite(g.s));
   const h = A === "d"
-    ? (c.best ? `Hạng ${dA(c.rank)}/${dA(e.total)} · còn ${c.left} lượt thi` : `Chưa có điểm hôm nay · còn ${c.left == null ? oe : c.left} lượt thi`)
+    ? (c.best ? `Hạng ${dA(c.rank)}/${dA(e.total)} hôm nay (còn ${c.left}/3 lượt thi)` : `Chưa có điểm hôm nay · còn ${c.left == null ? 3 : c.left}/3 lượt thi`)
     : (c.wbest ? `Hạng ${dA(c.wrank)}/${dA(e.wtotal)} tuần này` : "Chưa có điểm tuần này");
 
   let bannerHtml = "";
@@ -540,7 +540,7 @@ ${t}`,a=()=>{let c=d("chShare");const l=d("card").querySelector(".chres");!c&&l&
     </li>`;
   }).join("")}</ol>` : `<p class="note">${A === "d" ? "Hôm nay chưa quán nào thi. Thi ngay để đứng đầu bảng!" : "Tuần này chưa quán nào có điểm."}</p>`)
   + `<div class="lbme"><span>Quán của bạn</span><b></b><small>${h}</small><em>${dA(A === "d" ? c.best || 0 : c.wbest || 0)}</em></div>
-     <p class="note">Điểm tuần là tổng điểm tích lũy thi đấu. Top 1 nhận 1.000.000đ, Top 2 nhận 300.000đ, Top 3 nhận 100.000đ và được vinh danh bảng vàng!</p>`;
+     <p class="note">Mỗi ngày được thi 3 lượt. Toàn bộ điểm thi đấu được CỘNG DỒN liên tục đến hết tuần! Top 1 nhận 1.000.000đ, Top 2 nhận 300.000đ, Top 3 nhận 100.000đ vào két quán!</p>`;
 
   t.querySelectorAll(".lbrd .nm b").forEach((g, u) => { g.textContent = s[u].name || "Tiệm Mì Cay"; });
   const r = t.querySelector(".lbme b");

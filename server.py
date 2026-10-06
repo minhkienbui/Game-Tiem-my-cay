@@ -577,13 +577,13 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             conn = DB()
             cur = conn
 
-            # Top scores for today's challenge
+            # Top scores for today's challenge (Cộng dồn SUM score)
             cur.execute('''
-                SELECT id, MAX(score) as best_score, COUNT(*) as rounds
+                SELECT id, SUM(score) as total_score, COUNT(*) as rounds, SUM(served) as served
                 FROM challenges
                 WHERE day = ?
                 GROUP BY id
-                ORDER BY best_score DESC
+                ORDER BY total_score DESC
                 LIMIT 20
             ''', (chal_day,))
             top_rows = cur.fetchall()
@@ -597,7 +597,7 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
 
             # Player's rounds today
             cur.execute('''
-                SELECT COUNT(*), MAX(score)
+                SELECT COUNT(*), SUM(score)
                 FROM challenges
                 WHERE day = ? AND id = ?
             ''', (chal_day, shop_id))
@@ -1687,18 +1687,46 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             total = cur.fetchone()[0]
             conn.close()
 
-            cur.execute('SELECT MAX(score) FROM challenges WHERE day = ? AND id = ?', (chal_day, shop_id))
+            cur.execute('SELECT SUM(score) FROM challenges WHERE day = ? AND id = ?', (chal_day, shop_id))
             best = cur.fetchone()[0] or score
             cur.execute('SELECT COUNT(*) FROM challenges WHERE day = ? AND id = ?', (chal_day, shop_id))
-            rounds_done = cur.fetchone()[0] or 0
+            rounds_done = cur.fetchone()[0] or 1
             left = max(0, 3 - rounds_done)
+
+            cur.execute('''
+                SELECT COUNT(*) FROM (
+                    SELECT id, SUM(score) as tot FROM challenges
+                    WHERE day = ?
+                    GROUP BY id HAVING tot > ?
+                )
+            ''', (chal_day, best))
+            day_rank = cur.fetchone()[0] + 1
+            cur.execute('SELECT COUNT(DISTINCT id) FROM challenges WHERE day = ?', (chal_day,))
+            day_total = cur.fetchone()[0]
+
+            start_sec, end_sec, week_key, week_title = get_week_bounds()
+            cur.execute('''
+                SELECT SUM(score) FROM challenges
+                WHERE created_at >= ? AND created_at <= ? AND id = ?
+            ''', (start_sec, end_sec, shop_id))
+            wbest = cur.fetchone()[0] or best
+            cur.execute('''
+                SELECT COUNT(*) FROM (
+                    SELECT id, SUM(score) as tot FROM challenges
+                    WHERE created_at >= ? AND created_at <= ?
+                    GROUP BY id HAVING tot > ?
+                )
+            ''', (start_sec, end_sec, wbest))
+            wrank = cur.fetchone()[0] + 1
             conn.close()
 
             return self.send_json({
                 "ok": True,
-                "rank": rank,
-                "total": max(1, total),
+                "rank": day_rank,
+                "total": max(1, day_total),
                 "best": best,
+                "wbest": wbest,
+                "wrank": wrank,
                 "left": left
             })
 

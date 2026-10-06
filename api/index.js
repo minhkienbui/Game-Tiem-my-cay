@@ -146,8 +146,8 @@ function updateSaveDataMoney(saveData, newMoney) {
 }
 
 function getTodayChalDate() {
-  const now = new Date();
-  return `${now.getDate()}/${now.getMonth() + 1}`;
+  const vnTime = new Date(Date.now() + 7 * 3600000);
+  return `${vnTime.getUTCDate()}/${vnTime.getUTCMonth() + 1}`;
 }
 
 function generateSyncCode() {
@@ -384,9 +384,9 @@ module.exports = async (req, res) => {
         let globalData = (chalGlobalCache.data && (now - chalGlobalCache.time < 10000)) ? chalGlobalCache.data : null;
 
         if (!globalData) {
-          // 1 query for today's top using JOIN (replaces 21 sequential queries!)
-          const top = await sql`
-            SELECT c.id, COALESCE(l.name, 'Chủ quán ẩn danh') as name, MAX(c.score) as s
+          // 1 query for today's top using JOIN with SUM(score) (Cộng dồn điểm tất cả lượt thi hôm nay)
+          const topRaw = await sql`
+            SELECT c.id, COALESCE(l.name, 'Chủ quán ẩn danh') as name, SUM(c.score) as s, COUNT(*) as rounds, SUM(c.served) as served
             FROM challenges c
             LEFT JOIN leaderboard l ON c.id = l.id
             WHERE c.day = ${chalDay}
@@ -394,6 +394,13 @@ module.exports = async (req, res) => {
             ORDER BY s DESC
             LIMIT 20
           `;
+          const top = topRaw.map(r => ({
+            id: r.id,
+            name: r.name,
+            s: Number(r.s),
+            rounds: Number(r.rounds),
+            b: Number(r.served || 0)
+          }));
 
           // 1 query for weekly top using JOIN (replaces 31 sequential queries!)
           const wtopRaw = await sql`
@@ -436,7 +443,7 @@ module.exports = async (req, res) => {
 
           globalData = {
             day: chalDay,
-            top: top.map(r => ({ id: r.id, name: r.name, s: Number(r.s) })),
+            top,
             wtop,
             wtotal,
             total,
@@ -468,7 +475,7 @@ module.exports = async (req, res) => {
 
         if (shopId) {
           const meRows = await sql`
-            SELECT count(*) as rounds, MAX(score) as best
+            SELECT count(*) as rounds, SUM(score) as best
             FROM challenges
             WHERE day = ${chalDay} AND id = ${shopId}
           `;
@@ -1518,19 +1525,61 @@ module.exports = async (req, res) => {
           } catch (e) {}
         }
 
-        const rankRows = await sql`SELECT count(DISTINCT id) as cnt FROM challenges WHERE day = ${chalDay} AND score > ${score}`;
+        // Invalidate cache immediately on new round score
+        chalGlobalCache = { data: null, time: 0 };
+
+        // 1. Calculate user's accumulated score today & rounds left
+        const todayUserRows = await sql`
+          SELECT SUM(score) as total_today, COUNT(*) as rounds
+          FROM challenges
+          WHERE day = ${chalDay} AND id = ${shopId}
+        `;
+        const totalToday = Number(todayUserRows[0]?.total_today || score);
+        const roundsDone = Number(todayUserRows[0]?.rounds || 1);
+        const left = Math.max(0, 3 - roundsDone);
+
+        // 2. Calculate user's today rank based on accumulated SUM(score)
+        const rankRows = await sql`
+          SELECT count(*) as cnt FROM (
+            SELECT id, SUM(score) as tot
+            FROM challenges
+            WHERE day = ${chalDay}
+            GROUP BY id
+            HAVING SUM(score) > ${totalToday}
+          ) sub
+        `;
         const rank = Number(rankRows[0]?.cnt || 0) + 1;
-        const totalRows = await sql`SELECT count(DISTINCT id) as cnt FROM challenges WHERE day = ${chalDay}`;
-        const bestRows = await sql`SELECT MAX(score) as best FROM challenges WHERE day = ${chalDay} AND id = ${shopId}`;
-        const best = Number(bestRows[0]?.best || score);
-        const countRoundsRows = await sql`SELECT count(*) as cnt FROM challenges WHERE day = ${chalDay} AND id = ${shopId}`;
-        const left = Math.max(0, 3 - Number(countRoundsRows[0]?.cnt || 0));
+        const totalPlayersRows = await sql`
+          SELECT count(DISTINCT id) as cnt FROM challenges WHERE day = ${chalDay}
+        `;
+        const total = Math.max(1, Number(totalPlayersRows[0]?.cnt || 1));
+
+        // 3. Calculate user's weekly accumulated score & rank
+        const curWeek = getWeekBounds();
+        const wUserRows = await sql`
+          SELECT SUM(score) as total_week, COUNT(*) as w_rounds
+          FROM challenges
+          WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec} AND id = ${shopId}
+        `;
+        const totalWeek = Number(wUserRows[0]?.total_week || totalToday);
+        const wRankRows = await sql`
+          SELECT count(*) as cnt FROM (
+            SELECT id, SUM(score) as tot
+            FROM challenges
+            WHERE created_at >= ${curWeek.startSec} AND created_at <= ${curWeek.endSec}
+            GROUP BY id
+            HAVING SUM(score) > ${totalWeek}
+          ) sub
+        `;
+        const wrank = Number(wRankRows[0]?.cnt || 0) + 1;
 
         return res.json({
           ok: true,
           rank,
-          total: Math.max(1, Number(totalRows[0]?.cnt || 1)),
-          best,
+          total,
+          best: totalToday,
+          wbest: totalWeek,
+          wrank,
           left
         });
       }
