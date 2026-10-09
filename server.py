@@ -300,7 +300,7 @@ def get_week_bounds(target_date=None):
 
 DEFAULT_GAME_CONFIG = {
     "announcement_active": False,
-    "announcement_text": "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 1.000.000đ tiền mặt vào két quán!",
+    "announcement_text": "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 10.000.000đ, Top 2 nhận 4.000.000đ, Top 3 nhận 1.000.000đ, 10 Giải Khuyến Khích 500.000đ vào két!",
     "announcement_type": "event",
     "daySec": 210,
     "startMoney": 400000,
@@ -311,9 +311,10 @@ DEFAULT_GAME_CONFIG = {
     "catchRate": 50,
     "theftEnabled": True,
     "chalRounds": 3,
-    "rewardTop1": 1000000,
-    "rewardTop2": 300000,
-    "rewardTop3": 100000,
+    "rewardTop1": 10000000,
+    "rewardTop2": 4000000,
+    "rewardTop3": 1000000,
+    "rewardConsolation": 500000,
     "taxCycleDays": 3,
     "taxBaseRate": 50000
 }
@@ -334,13 +335,13 @@ def auto_finalize_completed_weeks():
                 WHERE created_at >= ? AND created_at <= ?
                 GROUP BY id
                 ORDER BY s DESC
-                LIMIT 3
+                LIMIT 13
             """, (start_sec, end_sec))
             top_rows = cur.fetchall()
             for idx, r in enumerate(top_rows):
                 rank = idx + 1
-                reward_money = 1000000 if rank == 1 else (300000 if rank == 2 else 100000)
-                custom_title = "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC" if rank == 1 else ("🥈 Á QUÂN BẬC THẦY HỎA LỰC" if rank == 2 else "🥉 QUÝ QUÂN TINH ANH NẤU MÌ")
+                reward_money = 10000000 if rank == 1 else (4000000 if rank == 2 else (1000000 if rank == 3 else 500000))
+                custom_title = "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC" if rank == 1 else ("🥈 Á QUÂN BẬC THẦY HỎA LỰC" if rank == 2 else ("🥉 QUÝ QUÂN TINH ANH NẤU MÌ" if rank == 3 else f"🎖️ GIẢI KHUYẾN KHÍCH TOP {rank}"))
                 cur.execute("SELECT name FROM leaderboard WHERE id = ?", (r[0],))
                 name_row = cur.fetchone()
                 shop_name = name_row[0] if name_row else "Tiệm Mì Cay"
@@ -541,24 +542,63 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             return self.send_json({"ok": True, "gifts": gifts})
 
         if path == "/api/lb":
+            params = parse_qs(parsed.query)
+            is_admin = params.get("all", [""])[0] == "1" or self.headers.get("X-Admin-Code") == "09659"
             conn = DB()
             cur = conn
-            cur.execute('''
-                SELECT id, name, profit, day, served, lv, rate
-                FROM leaderboard
-                ORDER BY profit DESC
-                LIMIT 50
-            ''')
+            if is_admin:
+                cur.execute('''
+                    SELECT id, name, profit, day, served, lv, rate
+                    FROM leaderboard
+                    ORDER BY profit DESC
+                    LIMIT 1000
+                ''')
+            else:
+                cur.execute('''
+                    SELECT id, name, profit, day, served, lv, rate
+                    FROM leaderboard
+                    ORDER BY profit DESC
+                    LIMIT 50
+                ''')
             rows = cur.fetchall()
             cur.execute('SELECT COUNT(*) FROM leaderboard')
             total = cur.fetchone()[0]
+
+            # Build shop_to_user map
+            shop_to_user = {}
+            try:
+                cur.execute("SELECT username, save_data FROM user_saves")
+                for u, s in cur.fetchall():
+                    if not s or "|" not in s: continue
+                    try:
+                        import base64
+                        b64 = s.split("|")[1]
+                        dec = base64.b64decode(b64).decode("utf-8")
+                        obj = json.loads(dec)
+                        if obj.get("pid"): shop_to_user[obj["pid"]] = u
+                        if obj.get("storeCode"): shop_to_user[obj["storeCode"]] = u
+                        if obj.get("shopName"): shop_to_user["name:" + obj["shopName"].strip().lower()] = u
+                    except Exception:
+                        pass
+                cur.execute("SELECT username, store_code FROM users WHERE store_code IS NOT NULL AND store_code != ''")
+                for u, code in cur.fetchall():
+                    shop_to_user[code] = u
+            except Exception:
+                pass
             conn.close()
 
             top = []
             for r in rows:
+                u_name = shop_to_user.get(r[0]) or shop_to_user.get("name:" + (r[1] or "").strip().lower()) or ""
                 top.append({
-                    "id": r[0], "name": r[1], "profit": r[2],
-                    "day": r[3], "served": r[4], "lv": r[5], "rate": r[6]
+                    "id": r[0],
+                    "name": r[1],
+                    "profit": r[2],
+                    "day": r[3],
+                    "served": r[4],
+                    "lv": r[5],
+                    "rate": r[6],
+                    "username": u_name
                 })
 
             return self.send_json({
@@ -627,7 +667,7 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 cur.execute('SELECT name FROM leaderboard WHERE id = ?', (wr[0],))
                 name_row = cur.fetchone()
                 name = name_row[0] if name_row else "Chủ quán ẩn danh"
-                prize = 1000000 if idx == 0 else (300000 if idx == 1 else (100000 if idx == 2 else 0))
+                prize = 10000000 if idx == 0 else (4000000 if idx == 1 else (1000000 if idx == 2 else (500000 if idx < 13 else 0)))
                 wtop.append({
                     "id": wr[0],
                     "name": name,
@@ -730,9 +770,10 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 "total": max(1, total_players),
                 "cups": cups,
                 "rewards_info": [
-                    { "rank": 1, "money": 1000000, "title": "🥇 TOP 1 - QUÁN QUÂN: 1.000.000đ + Vinh Danh Hoàng Gia" },
-                    { "rank": 2, "money": 300000, "title": "🥈 TOP 2 - Á QUÂN 1: 300.000đ + Vinh Danh Bảng Vàng" },
-                    { "rank": 3, "money": 100000, "title": "🥉 TOP 3 - Á QUÂN 2: 100.000đ + Vinh Danh Bảng Vàng" }
+                    { "rank": 1, "money": 10000000, "title": "🥇 TOP 1 - QUÁN QUÂN: 10.000.000đ + Vinh Danh Hoàng Gia" },
+                    { "rank": 2, "money": 4000000, "title": "🥈 TOP 2 - Á QUÂN 1: 4.000.000đ + Vinh Danh Bảng Vàng" },
+                    { "rank": 3, "money": 1000000, "title": "🥉 TOP 3 - Á QUÂN 2: 1.000.000đ + Vinh Danh Bảng Vàng" },
+                    { "rank": "4-13", "money": 500000, "title": "🎖️ 10 GIẢI KHUYẾN KHÍCH (TOP 4 - 13): 500.000đ / giải" }
                 ],
                 "hall_of_fame": hall_of_fame,
                 "unclaimed_reward": unclaimed_reward
@@ -1016,7 +1057,7 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
                 WHERE created_at >= ? AND created_at <= ?
                 GROUP BY id
                 ORDER BY s DESC
-                LIMIT 3
+                LIMIT 13
             """, (start_sec, end_sec))
             top_rows = cur.fetchall()
             if not top_rows:
@@ -1026,8 +1067,8 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             results = []
             for idx, r in enumerate(top_rows):
                 rank = idx + 1
-                reward_money = 1000000 if rank == 1 else (300000 if rank == 2 else 100000)
-                custom_title = "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC" if rank == 1 else ("🥈 Á QUÂN BẬC THẦY HỎA LỰC" if rank == 2 else "🥉 QUÝ QUÂN TINH ANH NẤU MÌ")
+                reward_money = 10000000 if rank == 1 else (4000000 if rank == 2 else (1000000 if rank == 3 else 500000))
+                custom_title = "👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC" if rank == 1 else ("🥈 Á QUÂN BẬC THẦY HỎA LỰC" if rank == 2 else ("🥉 QUÝ QUÂN TINH ANH NẤU MÌ" if rank == 3 else f"🎖️ GIẢI KHUYẾN KHÍCH TOP {rank}"))
                 cur.execute("SELECT name FROM leaderboard WHERE id = ?", (r[0],))
                 name_row = cur.fetchone()
                 shop_name = name_row[0] if name_row else "Tiệm Mì Cay"
@@ -1043,7 +1084,7 @@ class GameServerHandler(http.server.SimpleHTTPRequestHandler):
             conn.close()
             return self.send_json({
                 "ok": True,
-                "message": f"Đã kết thúc và đẩy Top 1-2-3 của {week_title} lên Bảng Vinh Danh thành công!",
+                "message": f"Đã kết thúc và đẩy Top 1-2-3 & 10 Giải Khuyến Khích của {week_title} lên Bảng Vinh Danh thành công!",
                 "week_key": week_key,
                 "results": results
             })

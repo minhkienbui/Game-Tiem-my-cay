@@ -39,7 +39,7 @@ function getWeekBounds(targetDate = new Date()) {
 
 const DEFAULT_GAME_CONFIG = {
   announcement_active: false,
-  announcement_text: "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 1.000.000đ tiền mặt vào két quán!",
+  announcement_text: "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 10.000.000đ, Top 2 nhận 4.000.000đ, Top 3 nhận 1.000.000đ, 10 Giải Khuyến Khích 500.000đ vào két!",
   announcement_type: "event",
   daySec: 210,
   startMoney: 400000,
@@ -50,9 +50,10 @@ const DEFAULT_GAME_CONFIG = {
   catchRate: 50,
   theftEnabled: true,
   chalRounds: 3,
-  rewardTop1: 1000000,
-  rewardTop2: 300000,
-  rewardTop3: 100000,
+  rewardTop1: 10000000,
+  rewardTop2: 4000000,
+  rewardTop3: 1000000,
+  rewardConsolation: 500000,
   taxCycleDays: 3,
   taxBaseRate: 50000
 };
@@ -69,22 +70,22 @@ async function autoFinalizeCompletedWeeks(sql) {
     `;
 
     if (Number(existing[0]?.count || 0) === 0) {
-      // Find top 3 from challenges for last week
+      // Find top 13 from challenges for last week (Top 1, 2, 3 and 10 consolation prizes)
       const topRows = await sql`
         SELECT id, SUM(score) as s, COUNT(*) as rounds
         FROM challenges
         WHERE created_at >= ${lastWeek.startSec} AND created_at <= ${lastWeek.endSec}
         GROUP BY id
         ORDER BY s DESC
-        LIMIT 3
+        LIMIT 13
       `;
 
       if (topRows.length > 0) {
         for (let idx = 0; idx < topRows.length; idx++) {
           const r = topRows[idx];
           const rank = idx + 1;
-          const reward_money = rank === 1 ? 1000000 : (rank === 2 ? 300000 : 100000);
-          const custom_title = rank === 1 ? '👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC' : (rank === 2 ? '🥈 Á QUÂN BẬC THẦY HỎA LỰC' : '🥉 QUÝ QUÂN TINH ANH NẤU MÌ');
+          const reward_money = rank === 1 ? 10000000 : (rank === 2 ? 4000000 : (rank === 3 ? 1000000 : 500000));
+          const custom_title = rank === 1 ? '👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC' : (rank === 2 ? '🥈 Á QUÂN BẬC THẦY HỎA LỰC' : (rank === 3 ? '🥉 QUÝ QUÂN TINH ANH NẤU MÌ' : `🎖️ GIẢI KHUYẾN KHÍCH TOP ${rank}`));
           const nameRows = await sql`SELECT name FROM leaderboard WHERE id = ${r.id}`;
           const shopName = nameRows[0]?.name || "Tiệm Mì Cay";
           const rowId = `${lastWeek.weekKey}_${rank}`;
@@ -410,27 +411,69 @@ module.exports = async (req, res) => {
         });
       }
 
-      // 1. GET /api/lb (Cached & Blazing Fast)
+      // 1. GET /api/lb (Leaderboard - Full shops for Admin & Username mapping)
       if (path === "/api/lb") {
+        const urlObj = new URL(req.url, `http://${req.headers.host}`);
+        const isAdmin = req.headers["x-admin-code"] === "09659" || urlObj.searchParams.get("all") === "1" || urlObj.searchParams.get("admin") === "1";
         const now = Date.now();
-        if (lbCache.data && (now - lbCache.time < 12000)) {
+        if (!isAdmin && lbCache.data && (now - lbCache.time < 12000)) {
           return res.json(lbCache.data);
         }
-        const top = await sql`
-          SELECT id, name, CAST(profit AS FLOAT) as profit, day, served, lv, CAST(rate AS FLOAT) as rate
-          FROM leaderboard
-          ORDER BY profit DESC
-          LIMIT 50
-        `;
+
+        // Fetch stores (Full list for admin, top 50 for regular in-game view)
+        const top = isAdmin
+          ? await sql`
+              SELECT id, name, CAST(profit AS FLOAT) as profit, day, served, lv, CAST(rate AS FLOAT) as rate
+              FROM leaderboard
+              ORDER BY profit DESC
+              LIMIT 1000
+            `
+          : await sql`
+              SELECT id, name, CAST(profit AS FLOAT) as profit, day, served, lv, CAST(rate AS FLOAT) as rate
+              FROM leaderboard
+              ORDER BY profit DESC
+              LIMIT 50
+            `;
+
         const countRes = await sql`SELECT count(*) FROM leaderboard`;
         const total = Number(countRes[0]?.count || top.length);
+
+        // Build shop_id / store_code -> username mapping from user_saves and users
+        const shopUserMap = {};
+        try {
+          const userSaveRows = await sql`SELECT username, save_data FROM user_saves`;
+          for (const ur of userSaveRows) {
+            if (!ur.save_data || !ur.save_data.includes("|")) continue;
+            try {
+              const b64 = ur.save_data.split("|")[1];
+              const jsonStr = Buffer.from(b64, "base64").toString("utf-8");
+              const parsed = JSON.parse(jsonStr);
+              if (parsed.pid) shopUserMap[parsed.pid] = ur.username;
+              if (parsed.storeCode) shopUserMap[parsed.storeCode] = ur.username;
+              if (parsed.shopName) shopUserMap["name:" + parsed.shopName.trim().toLowerCase()] = ur.username;
+            } catch (e) {}
+          }
+
+          const userCodeRows = await sql`SELECT username, store_code FROM users WHERE store_code IS NOT NULL AND store_code != ''`;
+          for (const uc of userCodeRows) {
+            shopUserMap[uc.store_code] = uc.username;
+          }
+        } catch (e) {}
+
+        const enrichedTop = top.map(s => ({
+          ...s,
+          username: shopUserMap[s.id] || shopUserMap["name:" + (s.name || "").trim().toLowerCase()] || ""
+        }));
+
         const result = {
           ok: true,
-          top,
+          top: enrichedTop,
           total,
           cups: { vua_mi_cay_vip: 1, sasin_01: 2 }
         };
-        lbCache = { data: result, time: now };
+        if (!isAdmin) {
+          lbCache = { data: result, time: now };
+        }
         return res.json(result);
       }
 
@@ -484,7 +527,7 @@ module.exports = async (req, res) => {
             s: Number(wr.s),
             rounds: Number(wr.rounds),
             rank: idx + 1,
-            prize: idx === 0 ? 1000000 : idx === 1 ? 300000 : idx === 2 ? 100000 : 0
+            prize: idx === 0 ? 10000000 : idx === 1 ? 4000000 : idx === 2 ? 1000000 : (idx < 13 ? 500000 : 0)
           }));
 
           // Hall of Fame
@@ -492,7 +535,7 @@ module.exports = async (req, res) => {
             SELECT id, week_key, week_title, rank, shop_id, shop_name, total_score, reward_money, custom_title, claimed_shops, created_at
             FROM weekly_hall_of_fame
             ORDER BY created_at DESC, rank ASC
-            LIMIT 20
+            LIMIT 60
           `;
 
           const cups = {};
@@ -527,9 +570,10 @@ module.exports = async (req, res) => {
               claimed: Boolean((h.claimed_shops || "").includes(h.shop_id))
             })),
             rewards_info: [
-              { rank: 1, money: 1000000, title: "🥇 TOP 1 - QUÁN QUÂN: 1.000.000đ + Vinh Danh Hoàng Gia" },
-              { rank: 2, money: 300000, title: "🥈 TOP 2 - Á QUÂN 1: 300.000đ + Vinh Danh Bảng Vàng" },
-              { rank: 3, money: 100000, title: "🥉 TOP 3 - Á QUÂN 2: 100.000đ + Vinh Danh Bảng Vàng" }
+              { rank: 1, money: 10000000, title: "🥇 TOP 1 - QUÁN QUÂN: 10.000.000đ + Vinh Danh Hoàng Gia" },
+              { rank: 2, money: 4000000, title: "🥈 TOP 2 - Á QUÂN 1: 4.000.000đ + Vinh Danh Bảng Vàng" },
+              { rank: 3, money: 1000000, title: "🥉 TOP 3 - Á QUÂN 2: 1.000.000đ + Vinh Danh Bảng Vàng" },
+              { rank: "4-13", money: 500000, title: "🎖️ 10 GIẢI KHUYẾN KHÍCH (TOP 4 - 13): 500.000đ / giải" }
             ]
           };
           chalGlobalCache = { data: globalData, time: now };
@@ -955,7 +999,7 @@ module.exports = async (req, res) => {
           WHERE created_at >= ${weekToFinalize.startSec} AND created_at <= ${weekToFinalize.endSec}
           GROUP BY id
           ORDER BY s DESC
-          LIMIT 3
+          LIMIT 13
         `;
 
         if (!topRows.length) {
@@ -966,8 +1010,8 @@ module.exports = async (req, res) => {
         for (let idx = 0; idx < topRows.length; idx++) {
           const r = topRows[idx];
           const rank = idx + 1;
-          const reward_money = rank === 1 ? 1000000 : (rank === 2 ? 300000 : 100000);
-          const custom_title = rank === 1 ? '👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC' : (rank === 2 ? '🥈 Á QUÂN BẬC THẦY HỎA LỰC' : '🥉 QUÝ QUÂN TINH ANH NẤU MÌ');
+          const reward_money = rank === 1 ? 10000000 : (rank === 2 ? 4000000 : (rank === 3 ? 1000000 : 500000));
+          const custom_title = rank === 1 ? '👑 QUÁN QUÂN ĐỆ NHẤT MÌ CAY TOÀN QUỐC' : (rank === 2 ? '🥈 Á QUÂN BẬC THẦY HỎA LỰC' : (rank === 3 ? '🥉 QUÝ QUÂN TINH ANH NẤU MÌ' : `🎖️ GIẢI KHUYẾN KHÍCH TOP ${rank}`));
           const nameRows = await sql`SELECT name FROM leaderboard WHERE id = ${r.id}`;
           const shopName = nameRows[0]?.name || "Tiệm Mì Cay";
           const rowId = `${weekToFinalize.weekKey}_${rank}`;
@@ -990,7 +1034,7 @@ module.exports = async (req, res) => {
 
         return res.json({
           ok: true,
-          message: `Đã kết thúc và đẩy Top 1-2-3 của ${weekToFinalize.weekTitle} lên Bảng Vinh Danh thành công!`,
+          message: `Đã kết thúc và đẩy Top 1-2-3 & 10 Giải Khuyến Khích của ${weekToFinalize.weekTitle} lên Bảng Vinh Danh thành công!`,
           week: weekToFinalize,
           results
         });

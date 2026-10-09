@@ -518,10 +518,12 @@ ${t}`,a=()=>{let c=d("chShare");const l=d("card").querySelector(".chres");!c&&l&
             ${wObj.list.map(h => {
               const isTop1 = h.rank === 1;
               const isTop2 = h.rank === 2;
-              const bg = isTop1 ? 'linear-gradient(135deg, #FFF8E1, #FFECB3)' : isTop2 ? '#F8FAFC' : '#FFF7ED';
-              const border = isTop1 ? '#FFC107' : isTop2 ? '#94A3B8' : '#FDBA74';
-              const badgeIcon = isTop1 ? '🥇' : isTop2 ? '🥈' : '🥉';
-              const prizeStr = isTop1 ? '1.000.000đ' : isTop2 ? '300.000đ' : '100.000đ';
+              const isTop3 = h.rank === 3;
+              const isConsolation = h.rank >= 4 && h.rank <= 13;
+              const bg = isTop1 ? 'linear-gradient(135deg, #FFF8E1, #FFECB3)' : isTop2 ? '#F8FAFC' : isTop3 ? '#FFF7ED' : '#F0F9FF';
+              const border = isTop1 ? '#FFC107' : isTop2 ? '#94A3B8' : isTop3 ? '#FDBA74' : '#BAE6FD';
+              const badgeIcon = isTop1 ? '🥇' : isTop2 ? '🥈' : isTop3 ? '🥉' : '🎖️';
+              const prizeStr = h.reward_money ? (h.reward_money >= 1000000 ? (h.reward_money / 1000000) + ' triệu' : (h.reward_money / 1000) + 'k') : (isTop1 ? '10 triệu' : isTop2 ? '4 triệu' : isTop3 ? '1 triệu' : '500k');
 
               return `
                 <div style="background:${bg};border:1.5px solid ${border};border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
@@ -560,21 +562,26 @@ ${t}`,a=()=>{let c=d("chShare");const l=d("card").querySelector(".chres");!c&&l&
         <div style="font-size:11.5px;font-weight:800;color:#C62828;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
           🎁 CƠ CẤU GIẢI THƯỞNG TUẦN (TIỀN MẶT VÀO KÉT)
         </div>
-        <div style="display:flex;justify-content:space-around;gap:6px;font-size:11.5px;">
-          <div style="background:#FFF;border:1px solid #FFE082;border-radius:8px;padding:5px 6px;flex:1;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:6px;font-size:11.5px;">
+          <div style="background:#FFF;border:1.5px solid #FFE082;border-radius:8px;padding:6px;flex:1;">
             <b style="color:#B45309;font-size:12px;">🥇 TOP 1</b><br>
-            <span style="font-weight:800;color:#C62828;font-size:13px;">1.000.000đ</span><br>
+            <span style="font-weight:900;color:#C62828;font-size:13.5px;">10.000.000đ</span><br>
             <small style="color:#78350F;">+ Vinh Danh Hoàng Gia</small>
           </div>
-          <div style="background:#FFF;border:1px solid #CFD8DC;border-radius:8px;padding:5px 6px;flex:1;">
+          <div style="background:#FFF;border:1.5px solid #CFD8DC;border-radius:8px;padding:6px;flex:1;">
             <b style="color:#475569;font-size:12px;">🥈 TOP 2</b><br>
-            <span style="font-weight:800;color:#C62828;font-size:13px;">300.000đ</span><br>
+            <span style="font-weight:900;color:#C62828;font-size:13.5px;">4.000.000đ</span><br>
             <small style="color:#37474F;">+ Bảng Vinh Danh</small>
           </div>
-          <div style="background:#FFF;border:1px solid #D7CCC8;border-radius:8px;padding:5px 6px;flex:1;">
+          <div style="background:#FFF;border:1.5px solid #D7CCC8;border-radius:8px;padding:6px;flex:1;">
             <b style="color:#8D6E63;font-size:12px;">🥉 TOP 3</b><br>
-            <span style="font-weight:800;color:#C62828;font-size:13px;">100.000đ</span><br>
+            <span style="font-weight:900;color:#C62828;font-size:13.5px;">1.000.000đ</span><br>
             <small style="color:#4E342E;">+ Bảng Vinh Danh</small>
+          </div>
+          <div style="background:#FFF;border:1.5px solid #BAE6FD;border-radius:8px;padding:6px;flex:1;">
+            <b style="color:#0284C7;font-size:12px;">🎖️ TOP 4 - 13</b><br>
+            <span style="font-weight:900;color:#C62828;font-size:13.5px;">500.000đ</span><br>
+            <small style="color:#0369A1;">10 Giải Khuyến Khích</small>
           </div>
         </div>
         <div style="font-size:11px;color:#7E655B;margin-top:5px;">
@@ -587,9 +594,10 @@ ${t}`,a=()=>{let c=d("chShare");const l=d("card").querySelector(".chres");!c&&l&
   t.innerHTML = bannerHtml + (s.length ? `<ol class="lbrd pk">${s.map((g, u) => {
     let prizeBadge = "";
     if (A === "w") {
-      if (u === 0) prizeBadge = '<span style="background:#FEF3C7;color:#B45309;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🥇 1Tr</span>';
-      else if (u === 1) prizeBadge = '<span style="background:#F1F5F9;color:#475569;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🥈 300k</span>';
-      else if (u === 2) prizeBadge = '<span style="background:#FFEDD5;color:#9A3412;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🥉 100k</span>';
+      if (u === 0) prizeBadge = '<span style="background:#FEF3C7;color:#B45309;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🥇 10Tr</span>';
+      else if (u === 1) prizeBadge = '<span style="background:#F1F5F9;color:#475569;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🥈 4Tr</span>';
+      else if (u === 2) prizeBadge = '<span style="background:#FFEDD5;color:#9A3412;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🥉 1Tr</span>';
+      else if (u < 13) prizeBadge = '<span style="background:#E0F2FE;color:#0284C7;font-size:10px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:4px;">🎖️ 500k</span>';
     }
     return `<li class="${g.id === a ? "me" : ""}">
       <span class="rk ${["gold", "silver", "bronze"][u] || ""}">${u + 1}</span>
@@ -599,7 +607,7 @@ ${t}`,a=()=>{let c=d("chShare");const l=d("card").querySelector(".chres");!c&&l&
     </li>`;
   }).join("")}</ol>` : `<p class="note">${A === "d" ? "Hôm nay chưa quán nào thi. Thi ngay để đứng đầu bảng!" : "Tuần này chưa quán nào có điểm."}</p>`)
   + `<div class="lbme"><span>Quán của bạn</span><b></b><small>${h}</small><em>${dA(A === "d" ? c.best || 0 : c.wbest || 0)}</em></div>
-     <p class="note">Mỗi ngày được thi 3 lượt. Toàn bộ điểm thi đấu được CỘNG DỒN liên tục đến hết tuần! Top 1 nhận 1.000.000đ, Top 2 nhận 300.000đ, Top 3 nhận 100.000đ vào két quán!</p>`;
+     <p class="note">Mỗi ngày được thi 3 lượt. Toàn bộ điểm thi đấu được CỘNG DỒN liên tục đến hết tuần! Top 1 nhận 10.000.000đ, Top 2 nhận 4.000.000đ, Top 3 nhận 1.000.000đ, 10 giải khuyến khích nhận 500.000đ vào két quán!</p>`;
 
   t.querySelectorAll(".lbrd .nm b").forEach((g, u) => { g.textContent = s[u].name || "Tiệm Mì Cay"; });
   const r = t.querySelector(".lbme b");
@@ -677,7 +685,7 @@ function showTournamentPromoModal(force = false) {
             </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:18px;font-weight:900;color:#C62828;">+1.000.000đ</div>
+            <div style="font-size:18px;font-weight:900;color:#C62828;">+10.000.000đ</div>
             <span style="font-size:10px;background:#C62828;color:#FFF;padding:1px 6px;border-radius:4px;font-weight:700;">Tiền mặt két</span>
           </div>
         </div>
@@ -691,7 +699,7 @@ function showTournamentPromoModal(force = false) {
             </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:17px;font-weight:900;color:#C62828;">+300.000đ</div>
+            <div style="font-size:17px;font-weight:900;color:#C62828;">+4.000.000đ</div>
             <span style="font-size:10px;background:#475569;color:#FFF;padding:1px 6px;border-radius:4px;font-weight:700;">Tiền mặt két</span>
           </div>
         </div>
@@ -705,8 +713,22 @@ function showTournamentPromoModal(force = false) {
             </div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:17px;font-weight:900;color:#C62828;">+100.000đ</div>
+            <div style="font-size:17px;font-weight:900;color:#C62828;">+1.000.000đ</div>
             <span style="font-size:10px;background:#9A3412;color:#FFF;padding:1px 6px;border-radius:4px;font-weight:700;">Tiền mặt két</span>
+          </div>
+        </div>
+
+        <div style="background:linear-gradient(135deg, #F0F9FF, #E0F2FE);border:2px solid #BAE6FD;border-radius:12px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:10px;text-align:left;">
+            <span style="font-size:24px;">🎖️</span>
+            <div>
+              <div style="font-weight:900;color:#0369A1;font-size:13px;text-transform:uppercase;">10 GIẢI KHUYẾN KHÍCH (TOP 4 - 13)</div>
+              <div style="font-size:11.5px;color:#0284C7;">Khắc tên Bảng Vinh Danh Tuần</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:16px;font-weight:900;color:#C62828;">+500.000đ</div>
+            <span style="font-size:10px;background:#0284C7;color:#FFF;padding:1px 6px;border-radius:4px;font-weight:700;">Tiền mặt / giải</span>
           </div>
         </div>
       </div>
@@ -716,7 +738,7 @@ function showTournamentPromoModal(force = false) {
         ⚡ <b>Thể lệ thi đấu cực đơn giản:</b><br>
         • Mỗi ngày có <b>3 lượt thi đấu miễn phí</b> (Bếp riêng biệt, không tốn nguyên liệu hay tiền của quán).<br>
         • Nấu và giao 20 tô mì chuẩn vị trong 90 giây để tích lũy điểm số.<br>
-        • <b>Tổng điểm sau 1 tuần</b> sẽ quyết định Top 1 - Top 2 - Top 3 để nhận tiền thưởng trực tiếp vào két (không tăng XP)!
+        • <b>Tổng điểm sau 1 tuần</b> sẽ quyết định Top 1 (10 triệu), Top 2 (4 triệu), Top 3 (1 triệu) và 10 Giải Khuyến Khích (500k) để nhận tiền thưởng trực tiếp vào két (không tăng XP)!
       </div>
     </div>`,
     [
@@ -732,9 +754,14 @@ function showTournamentPromoModal(force = false) {
 
 function showWeeklyRewardClaimModal(reward) {
   const isDark = (typeof os === "function" && os());
-  const rankLabel = reward.rank === 1 ? '🥇 TOP 1 - QUÁN QUÂN TUẦN' : reward.rank === 2 ? '🥈 TOP 2 - Á QUÂN 1' : '🥉 TOP 3 - Á QUÂN 2';
-  const rankIcon = reward.rank === 1 ? '🥇' : reward.rank === 2 ? '🥈' : '🥉';
-  const prizeStr = reward.rank === 1 ? '1.000.000đ' : reward.rank === 2 ? '300.000đ' : '100.000đ';
+  const isTop1 = reward.rank === 1;
+  const isTop2 = reward.rank === 2;
+  const isTop3 = reward.rank === 3;
+  const rankLabel = isTop1 ? '🥇 TOP 1 - QUÁN QUÂN TUẦN' : isTop2 ? '🥈 TOP 2 - Á QUÂN 1' : isTop3 ? '🥉 TOP 3 - Á QUÂN 2' : `🎖️ TOP ${reward.rank} - GIẢI KHUYẾN KHÍCH`;
+  const rankIcon = isTop1 ? '🥇' : isTop2 ? '🥈' : isTop3 ? '🥉' : '🎖️';
+  const prizeMoney = Number(reward.money) || (isTop1 ? 10000000 : isTop2 ? 4000000 : isTop3 ? 1000000 : 500000);
+  const prizeStr = prizeMoney >= 1000000 ? (prizeMoney / 1000000).toLocaleString('vi-VN') + ' triệu' : (prizeMoney / 1000).toLocaleString('vi-VN') + 'k';
+  const fullPrizeStr = prizeMoney.toLocaleString('vi-VN') + 'đ';
 
   X(`
     <div style="text-align:center;padding:4px 0;">
@@ -752,7 +779,7 @@ function showWeeklyRewardClaimModal(reward) {
           ${V(reward.week_title || reward.week_key)} · ${V(reward.custom_title || "Vinh danh Bảng Vàng")}
         </div>
         <div style="font-size:32px;font-weight:900;color:#C62828;letter-spacing:1px;margin:4px 0;">
-          +${prizeStr}
+          +${fullPrizeStr}
         </div>
         <div style="font-size:12px;color:${isDark ? '#C8B2AC' : '#7E655B'};font-weight:600;">
           (Tiền mặt tự động cộng thẳng vào két của quán · Không tăng XP)
@@ -764,7 +791,7 @@ function showWeeklyRewardClaimModal(reward) {
       </div>
     </div>`,
     [
-      ["💰 Xác Nhận Nhận Thưởng (+" + prizeStr + ")", async () => {
+      ["💰 Xác Nhận Nhận Thưởng (+" + fullPrizeStr + ")", async () => {
         // Automatically add cash prize directly into money (NO XP as required!)
         o.money = (o.money || 0) + reward.money;
         o.cur.gift = (o.cur.gift || 0) + reward.money;

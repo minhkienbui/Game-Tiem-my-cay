@@ -757,9 +757,12 @@
         <div class="panel-head">
           <div>
             <h3>🏆 Quản Lý Danh Sách Tất Cả Tiệm Mì (Leaderboard)</h3>
-            <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Bảng xếp hạng tổng doanh thu và đánh giá các tiệm mì toàn quốc</p>
+            <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Bảng xếp hạng tổng doanh thu và đánh giá đầy đủ tất cả tiệm mì toàn quốc</p>
           </div>
-          <button class="btn-primary" onclick="openAddPlayerModal()">+ Thêm Quán Mới</button>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="adminLbSearch" placeholder="🔍 Tìm theo tên quán, ID, tên user..." oninput="filterAdminLeaderboard()" style="padding:8px 14px;border:1.5px solid var(--border);border-radius:20px;font-size:12.5px;outline:none;width:260px;background:#FFF;color:#1E293B;">
+            <button class="btn-primary" onclick="openAddPlayerModal()">+ Thêm Quán Mới</button>
+          </div>
         </div>
         <div class="table-responsive">
           <table>
@@ -790,7 +793,7 @@
         <div class="panel-head" style="margin-bottom:10px;">
           <div>
             <h3 style="color:#C62828;margin:0;">🏆 Bảng Vinh Danh Tuần & Trao Thưởng Tự Động</h3>
-            <p style="font-size:12.5px;color:#7E655B;margin:4px 0 0;">Hệ thống tự động đẩy Top 1 (1.000.000đ) - Top 2 (300.000đ) - Top 3 (100.000đ) lên Bảng Vinh Danh sau khi hết tuần!</p>
+            <p style="font-size:12.5px;color:#7E655B;margin:4px 0 0;">Hệ thống tự động đẩy Top 1 (10.000.000đ) - Top 2 (4.000.000đ) - Top 3 (1.000.000đ) & 10 Giải Khuyến Khích (500.000đ) lên Bảng Vinh Danh sau khi hết tuần!</p>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
             <button class="btn-act" onclick="adminFinalizeTournament('last')" style="background:#FFF3D6;color:#B45309;border:1.5px solid #FCD34D;font-weight:700;font-size:12px;">🏆 Trao Thưởng Tuần Vừa Qua</button>
@@ -1042,18 +1045,23 @@
               </div>
               <div class="form-group">
                 <label>Tiền Thưởng TOP 1 - Quán Quân (VNĐ):</label>
-                <input type="number" id="cfgRewardTop1" min="100000" step="100000">
-                <small style="color:#888;">Mặc định: 1.000.000đ tiền mặt vào két</small>
+                <input type="number" id="cfgRewardTop1" min="100000" step="500000">
+                <small style="color:#888;">Mặc định: 10.000.000đ tiền mặt vào két</small>
               </div>
               <div class="form-group">
                 <label>Tiền Thưởng TOP 2 - Á Quân 1 (VNĐ):</label>
-                <input type="number" id="cfgRewardTop2" min="50000" step="50000">
-                <small style="color:#888;">Mặc định: 300.000đ tiền mặt vào két</small>
+                <input type="number" id="cfgRewardTop2" min="50000" step="200000">
+                <small style="color:#888;">Mặc định: 4.000.000đ tiền mặt vào két</small>
               </div>
               <div class="form-group">
                 <label>Tiền Thưởng TOP 3 - Á Quân 2 (VNĐ):</label>
-                <input type="number" id="cfgRewardTop3" min="20000" step="20000">
-                <small style="color:#888;">Mặc định: 100.000đ tiền mặt vào két</small>
+                <input type="number" id="cfgRewardTop3" min="20000" step="100000">
+                <small style="color:#888;">Mặc định: 1.000.000đ tiền mặt vào két</small>
+              </div>
+              <div class="form-group">
+                <label>Tiền Thưởng 10 Giải Khuyến Khích (TOP 4 - 13) (VNĐ):</label>
+                <input type="number" id="cfgRewardConsolation" min="10000" step="50000">
+                <small style="color:#888;">Mặc định: 500.000đ tiền mặt / giải</small>
               </div>
             </div>
           </div>
@@ -1193,6 +1201,7 @@
   <!-- JAVASCRIPT LOGIC -->
   <script>
     const ADMIN_CORRECT_CODE = "09659";
+    let allLeaderboardData = [];
     let allUsersData = [];
 
     function showToast(msg) {
@@ -2070,6 +2079,48 @@
       }
     }
 
+    function filterAdminLeaderboard() {
+      const q = (document.getElementById("adminLbSearch")?.value || "").toLowerCase().trim();
+      const filtered = (allLeaderboardData || []).filter(s => {
+        if (!q) return true;
+        return (s.name || "").toLowerCase().includes(q) ||
+               (s.id || "").toLowerCase().includes(q) ||
+               (s.username || "").toLowerCase().includes(q);
+      });
+      renderAdminLeaderboardTable(filtered);
+    }
+
+    function renderAdminLeaderboardTable(list) {
+      const fullTbody = document.getElementById("fullLeaderboardBody");
+      if (!fullTbody) return;
+      if (!list.length) {
+        fullTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13.5px;">Không tìm thấy quán mì phù hợp.</td></tr>';
+        return;
+      }
+
+      fullTbody.innerHTML = list.map((s, idx) => `
+        <tr>
+          <td><code>${escapeHtml(s.id)}</code></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+              <b style="font-size:13.5px;color:var(--text);">${escapeHtml(s.name)}</b>
+              ${s.username ? `<span style="background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;padding:2px 7px;border-radius:6px;font-size:11.5px;font-weight:700;" title="Tài khoản đăng nhập">👤 ${escapeHtml(s.username)}</span>` : '<span style="color:#94A3B8;font-size:11px;font-weight:500;">(Khách)</span>'}
+            </div>
+          </td>
+          <td><span class="badge badge-lv">Cấp ${s.lv}</span></td>
+          <td>Ngày ${s.day}</td>
+          <td>${s.served} tô</td>
+          <td>⭐ ${s.rate || 5.0}</td>
+          <td style="font-weight:700; color:${s.profit >= 0 ? '#3E9B4F' : '#C23328'}">${formatMoney(s.profit)}</td>
+          <td>
+            <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openMoneyModal('shop', '${s.id}', '${escapeHtml(s.name)}', ${s.profit || 0})">💵 Thêm/Trừ Tiền</button>
+            <button class="btn-act btn-edit" onclick="editPlayer('${s.id}', '${escapeHtml(s.name)}', ${s.profit}, ${s.lv})">Sửa</button>
+            <button class="btn-act btn-del" onclick="deletePlayer('${s.id}')">Xóa</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
     async function openAddPlayerModal() {
       const name = prompt("Nhập tên quán mì mới:");
       if (!name) return;
@@ -2123,7 +2174,7 @@
     // --- GAME CONFIGURATION (REWORKED & FULLY FUNCTIONAL) ---
     const DEFAULT_CONFIG_VALUES = {
       announcement_active: false,
-      announcement_text: "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 1.000.000đ tiền mặt vào két quán!",
+      announcement_text: "Đại hội Giải Mì Tuần đang diễn ra sôi nổi! Top 1 nhận 10.000.000đ, Top 2 nhận 4.000.000đ, Top 3 nhận 1.000.000đ, 10 Giải Khuyến Khích 500.000đ vào két!",
       announcement_type: "event",
       daySec: 210,
       startMoney: 400000,
@@ -2134,9 +2185,10 @@
       catchRate: 50,
       theftEnabled: true,
       chalRounds: 3,
-      rewardTop1: 1000000,
-      rewardTop2: 300000,
-      rewardTop3: 100000,
+      rewardTop1: 10000000,
+      rewardTop2: 4000000,
+      rewardTop3: 1000000,
+      rewardConsolation: 500000,
       taxCycleDays: 3,
       taxBaseRate: 50000
     };
@@ -2170,9 +2222,11 @@
         document.getElementById("cfgTheftEnabled").checked = cfg.theftEnabled !== false;
 
         document.getElementById("cfgChalRounds").value = cfg.chalRounds || 3;
-        document.getElementById("cfgRewardTop1").value = cfg.rewardTop1 || 1000000;
-        document.getElementById("cfgRewardTop2").value = cfg.rewardTop2 || 300000;
-        document.getElementById("cfgRewardTop3").value = cfg.rewardTop3 || 100000;
+        document.getElementById("cfgRewardTop1").value = cfg.rewardTop1 || 10000000;
+        document.getElementById("cfgRewardTop2").value = cfg.rewardTop2 || 4000000;
+        document.getElementById("cfgRewardTop3").value = cfg.rewardTop3 || 1000000;
+        const elCons = document.getElementById("cfgRewardConsolation");
+        if (elCons) elCons.value = cfg.rewardConsolation || 500000;
 
         document.getElementById("cfgTaxCycleDays").value = cfg.taxCycleDays || 3;
         document.getElementById("cfgTaxBaseRate").value = cfg.taxBaseRate || 50000;
@@ -2203,9 +2257,10 @@
         theftEnabled: document.getElementById("cfgTheftEnabled").checked,
 
         chalRounds: parseInt(document.getElementById("cfgChalRounds").value, 10) || 3,
-        rewardTop1: parseInt(document.getElementById("cfgRewardTop1").value, 10) || 1000000,
-        rewardTop2: parseInt(document.getElementById("cfgRewardTop2").value, 10) || 300000,
-        rewardTop3: parseInt(document.getElementById("cfgRewardTop3").value, 10) || 100000,
+        rewardTop1: parseInt(document.getElementById("cfgRewardTop1").value, 10) || 10000000,
+        rewardTop2: parseInt(document.getElementById("cfgRewardTop2").value, 10) || 4000000,
+        rewardTop3: parseInt(document.getElementById("cfgRewardTop3").value, 10) || 1000000,
+        rewardConsolation: parseInt(document.getElementById("cfgRewardConsolation")?.value, 10) || 500000,
 
         taxCycleDays: parseInt(document.getElementById("cfgTaxCycleDays").value, 10) || 3,
         taxBaseRate: parseInt(document.getElementById("cfgTaxBaseRate").value, 10) || 50000
@@ -2429,58 +2484,48 @@
 
     async function loadAllData() {
       try {
-        // 1. Load Leaderboard
-        const resLb = await fetch("/api/lb");
+        // 1. Load Leaderboard (FETCH FULL SHOPS & USERNAME MAPPING)
+        const resLb = await fetch("/api/lb?all=1", {
+          headers: { "X-Admin-Code": getAdminAuthCode() || "09659" }
+        });
         const dataLb = await resLb.json();
 
         let totalProfit = 0;
         let totalServed = 0;
-        const top = dataLb.top || [];
+        allLeaderboardData = dataLb.top || [];
+        const totalShopsCount = dataLb.total || allLeaderboardData.length;
 
-        top.forEach(s => {
+        allLeaderboardData.forEach(s => {
           totalProfit += (s.profit || 0);
           totalServed += (s.served || 0);
         });
 
-        document.getElementById("metricTotalShops").textContent = (dataLb.total || top.length);
+        document.getElementById("metricTotalShops").textContent = totalShopsCount;
         document.getElementById("metricTotalServed").textContent = totalServed.toLocaleString("vi-VN");
         document.getElementById("metricTotalProfit").textContent = formatMoney(totalProfit);
         const sideShopEl = document.getElementById("sideShopCount");
-        if (sideShopEl) sideShopEl.textContent = top.length;
+        if (sideShopEl) sideShopEl.textContent = totalShopsCount;
 
         // Render Overview Top 5
         const ovTopBody = document.getElementById("overviewTopShopsBody");
         if (ovTopBody) {
-          ovTopBody.innerHTML = top.slice(0, 5).map((s, idx) => `
+          ovTopBody.innerHTML = allLeaderboardData.slice(0, 5).map((s, idx) => `
             <tr>
               <td><span class="badge badge-rank">#${idx + 1}</span></td>
-              <td><b>${escapeHtml(s.name)}</b></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                  <b>${escapeHtml(s.name)}</b>
+                  ${s.username ? `<span style="background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:700;">👤 ${escapeHtml(s.username)}</span>` : '<span style="color:#94A3B8;font-size:11px;">(Khách)</span>'}
+                </div>
+              </td>
               <td>Cấp ${s.lv}</td>
               <td style="color:#2E7D32;font-weight:700;">${formatMoney(s.profit)}</td>
             </tr>
           `).join("");
         }
 
-        // Render Full Leaderboard table
-        const fullTbody = document.getElementById("fullLeaderboardBody");
-        if (fullTbody) {
-          fullTbody.innerHTML = top.map((s, idx) => `
-            <tr>
-              <td><code>${s.id}</code></td>
-              <td><b>${escapeHtml(s.name)}</b></td>
-              <td><span class="badge badge-lv">Cấp ${s.lv}</span></td>
-              <td>Ngày ${s.day}</td>
-              <td>${s.served} tô</td>
-              <td>⭐ ${s.rate || 5.0}</td>
-              <td style="font-weight:700; color:${s.profit >= 0 ? '#3E9B4F' : '#C23328'}">${formatMoney(s.profit)}</td>
-              <td>
-                <button class="btn-act" style="background:#FFF9DB;color:#B45309;border:1px solid #FCD34D;font-weight:700;" onclick="openMoneyModal('shop', '${s.id}', '${escapeHtml(s.name)}', ${s.profit || 0})" style="background:#E8F5E9;color:#2E7D32;border:1.5px solid #A5D6A7;font-weight:800;font-size:12px;">💵 Thêm/Trừ Tiền</button>
-                <button class="btn-act btn-edit" onclick="editPlayer('${s.id}', '${escapeHtml(s.name)}', ${s.profit}, ${s.lv})">Sửa</button>
-                <button class="btn-act btn-del" onclick="deletePlayer('${s.id}')">Xóa</button>
-              </td>
-            </tr>
-          `).join("");
-        }
+        // Render Full Leaderboard table with search filter
+        filterAdminLeaderboard();
 
         // 2. Load Registered Users List (GIỮ NGUYÊN 100% DATA USER)
         try {
@@ -2524,9 +2569,10 @@
           hofBody.innerHTML = hofList.length ? hofList.map(h => {
             const isTop1 = h.rank === 1;
             const isTop2 = h.rank === 2;
-            const badgeIcon = isTop1 ? '🥇 TOP 1' : isTop2 ? '🥈 TOP 2' : '🥉 TOP 3';
-            const badgeCls = isTop1 ? 'background:#FEF3C7;color:#B45309;' : isTop2 ? 'background:#F1F5F9;color:#475569;' : 'background:#FFEDD5;color:#9A3412;';
-            const prizeMoney = h.reward_money ? formatMoney(h.reward_money) : (isTop1 ? '1.000.000đ' : isTop2 ? '300.000đ' : '100.000đ');
+            const isTop3 = h.rank === 3;
+            const badgeIcon = isTop1 ? '🥇 TOP 1' : isTop2 ? '🥈 TOP 2' : isTop3 ? '🥉 TOP 3' : `🎖️ TOP ${h.rank}`;
+            const badgeCls = isTop1 ? 'background:#FEF3C7;color:#B45309;' : isTop2 ? 'background:#F1F5F9;color:#475569;' : isTop3 ? 'background:#FFEDD5;color:#9A3412;' : 'background:#E0F2FE;color:#0284C7;';
+            const prizeMoney = h.reward_money ? formatMoney(h.reward_money) : (isTop1 ? '10.000.000đ' : isTop2 ? '4.000.000đ' : isTop3 ? '1.000.000đ' : '500.000đ');
 
             return `
               <tr>
@@ -2556,10 +2602,12 @@
             const isTop1 = idx === 0;
             const isTop2 = idx === 1;
             const isTop3 = idx === 2;
-            const rankBadge = isTop1 ? '🥇 Top 1' : isTop2 ? '🥈 Top 2' : isTop3 ? '🥉 Top 3' : `#${idx + 1}`;
-            const prizeBadge = isTop1 ? '<span style="background:#FEF3C7;color:#B45309;padding:2px 8px;border-radius:4px;font-weight:800;">1.000.000đ + Vinh Danh</span>'
-              : isTop2 ? '<span style="background:#F1F5F9;color:#475569;padding:2px 8px;border-radius:4px;font-weight:800;">300.000đ + Vinh Danh</span>'
-              : isTop3 ? '<span style="background:#FFEDD5;color:#9A3412;padding:2px 8px;border-radius:4px;font-weight:800;">100.000đ + Vinh Danh</span>'
+            const isConsolation = idx >= 3 && idx < 13;
+            const rankBadge = isTop1 ? '🥇 Top 1' : isTop2 ? '🥈 Top 2' : isTop3 ? '🥉 Top 3' : (isConsolation ? `🎖️ Top ${idx + 1}` : `#${idx + 1}`);
+            const prizeBadge = isTop1 ? '<span style="background:#FEF3C7;color:#B45309;padding:2px 8px;border-radius:4px;font-weight:800;">10.000.000đ + Vinh Danh</span>'
+              : isTop2 ? '<span style="background:#F1F5F9;color:#475569;padding:2px 8px;border-radius:4px;font-weight:800;">4.000.000đ + Vinh Danh</span>'
+              : isTop3 ? '<span style="background:#FFEDD5;color:#9A3412;padding:2px 8px;border-radius:4px;font-weight:800;">1.000.000đ + Vinh Danh</span>'
+              : isConsolation ? '<span style="background:#E0F2FE;color:#0284C7;padding:2px 8px;border-radius:4px;font-weight:800;">500.000đ Khuyến Khích</span>'
               : '<span style="color:#888;">Khích lệ</span>';
 
             return `
